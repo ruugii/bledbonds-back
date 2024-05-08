@@ -26,3 +26,8 @@ app.use(
     '/api/v1/genders',
     require('./routes/genders-routes')
 )
+
+app.use(
+    '/api/v1/newsletters',
+    require('./routes/newsletter-routes')
+)
