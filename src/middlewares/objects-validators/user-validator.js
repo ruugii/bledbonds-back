@@ -9,7 +9,6 @@ const pool = require("../../db/db");
 
 const create = async (req, res, next) => {
     try {
-        console.log(req.body);
         const requiredParams = ["email", "phone", "password", "genre", "name", "birthDate"];
         if (verifyRequiredParams(requiredParams, req, res) === 0) {
             const errors = [

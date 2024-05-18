@@ -9,7 +9,6 @@ const pool = require("../../db/db");
 
 const create = async (req, res, next) => {
     try {
-        console.log(req.body);
         const requiredParams = ["email"];
         if (verifyRequiredParams(requiredParams, req, res) === 0) {
             const errors = [
@@ -18,6 +17,8 @@ const create = async (req, res, next) => {
             const filteredErrors = errors.filter(error => error.length > 0);
             const mappedErrors = filteredErrors.map((error, index) => ({ [index]: error }));
             const response = { message: "Validation errors", errors: mappedErrors };
+            const [r] = await pool.query("SELECT * FROM newsletter WHERE email = ?", [req.body.email]);
+            if (r.length > 0) return res.status(400).json({ message: "Email already registered" });
             if (errors.some(error => error.length > 0)) return res.status(400).json(response);
             return next();
         } else {
@@ -44,7 +45,26 @@ const activate = async (req, res, next) => {
     }
 }
 
+const deleteEmail = async (req, res, next) => {
+    try {
+        if (req.params.email === undefined) return res.status(400).json({ message: "Missing required params" });
+        const errors = [
+            await emailValidator(req.params.email, 255, false),
+        ];
+        const filteredErrors = errors.filter(error => error.length > 0);
+        const mappedErrors = filteredErrors.map((error, index) => ({ [index]: error }));
+        const response = { message: "Validation errors", errors: mappedErrors };
+        if (errors.some(error => error.length > 0)) return res.status(400).json(response);
+        const [r] = await pool.query("SELECT * FROM newsletter WHERE email = ?", [req.params.email]);
+        if (r.length === 0) return res.status(400).json({ message: "Email not registered" });
+        next();
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error", error: error});
+    }
+}
+
 module.exports = {
     create,
-    activate
+    activate,
+    deleteEmail
 };
