@@ -1,6 +1,8 @@
 const pool = require("../db/db");
+const { getRandomToken } = require("../functions/getRandomToken");
 const { hashPassword } = require("../functions/hashPassword");
 const nodemailer = require('nodemailer');
+const { get } = require("../routes/user-routes");
 
 const register = async (req, res) => {
   try {
@@ -43,12 +45,13 @@ const register = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "Internal server error",
+      path: "src/controller/newsletter-controller.js",
       error: error
     });
   }
 }
 
-const html = (email) => {
+const html = (email, token) => {
   return (
     `
         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -228,7 +231,7 @@ a[x-apple-data-detectors] {
                   <td align="center" valign="top" style="padding:0;Margin:0;width:560px">
                    <table cellpadding="0" cellspacing="0" width="100%" role="presentation" style="mso-table-lspace:0pt;mso-table-rspace:0pt;border-collapse:collapse;border-spacing:0px">
                      <tr>
-                      <td align="center" class="es-infoblock" style="padding:0;Margin:0;line-height:14px;font-size:12px;color:#CCCCCC"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:14px;color:#CCCCCC;font-size:12px"><a target="_blank" href="" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:underline;color:#CCCCCC;font-size:12px"></a>No longer want to receive these emails?&nbsp;<a href="" target="_blank" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:underline;color:#CCCCCC;font-size:12px">Unsubscribe</a>.<a target="_blank" href="" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:underline;color:#CCCCCC;font-size:12px"></a></p></td>
+                      <td align="center" class="es-infoblock" style="padding:0;Margin:0;line-height:14px;font-size:12px;color:#CCCCCC"><p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:14px;color:#CCCCCC;font-size:12px"><a target="_blank" href="" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:underline;color:#CCCCCC;font-size:12px"></a>¿Ya no quieres recibir estos correos electrónicos?&nbsp;<a href="bledbonds.es/newsletter/delete/${token}" target="_blank" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:underline;color:#CCCCCC;font-size:12px">Unsubscribe</a>.<a target="_blank" href="" style="-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;text-decoration:underline;color:#CCCCCC;font-size:12px"></a></p></td>
                      </tr>
                    </table></td>
                  </tr>
@@ -264,6 +267,7 @@ const activate = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Internal server error",
+      path: "src/controller/newsletter-controller.js",
       error: error
     });
   }
@@ -271,7 +275,10 @@ const activate = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    await pool.query('INSERT INTO `newsletter`(`email`) VALUES (?)', [req.body.email]);
+    console.log(req.body.email);
+    const token = getRandomToken();
+    console.log(token);
+    await pool.query('INSERT INTO `newsletter`(`email`, `token`) VALUES (?, ?)', [req.body.email, token]);
     nodemailer.createTestAccount((err, account) => {
       let transporter = nodemailer.createTransport({
         host: 'smtp.ionos.es',
@@ -289,7 +296,7 @@ const create = async (req, res) => {
         },
         to: req.body.email,
         subject: 'Confirmación de registro en BledBonds',
-        html: html(req.body.email)
+        html: html(req.body.email, token)
       };
       transporter.sendMail(mailOptions, (error, info) => {
         if (error) {
@@ -307,6 +314,7 @@ const create = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: "Internal server error",
+      path: "src/controller/newsletter-controller.js",
       error: error
     });
   }
@@ -314,13 +322,14 @@ const create = async (req, res) => {
 
 const deleteEmail = async (req, res) => {
   try {
-    await pool.query('DELETE FROM newsletter WHERE email = ?', [req.params.email]);
+    await pool.query('DELETE FROM newsletter WHERE token = ?', [req.params.email]);
     return res.status(200).json({
       message: "Email deleted from newsletter list"
     });
   } catch (error) {
     return res.status(500).json({
       message: "Internal server error",
+      path: "src/controller/newsletter-controller.js",
       error: error
     });
   }

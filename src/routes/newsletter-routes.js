@@ -12,5 +12,11 @@ router.post(
     newsletterValidator.create,
     newsletterController.create
 );
+router.delete(
+    '/delete/:email',
+    verifyAPIKey,
+    newsletterValidator.deleteEmail,
+    newsletterController.deleteEmail
+);
 
 module.exports = router;

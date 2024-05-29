@@ -32,7 +32,9 @@ const create = async (req, res, next) => {
         }
     } catch (error) {
         return res.status(500).json({
-            message: "Internal server error"
+            message: "Internal server error",
+            path: "src/middlewares/objects-validators/newsletter-validator.js",
+            error: error
         });
     }
 }
@@ -44,7 +46,7 @@ const activate = async (req, res, next) => {
         const [r] = await pool.query("SELECT * FROM users_activation WHERE validationCode = ?", [req.params.validateCode]);
         next();
     } catch (error) {
-        res.status(500).json({ message: "Internal server error", error: error});
+        res.status(500).json({ message: "Internal server error", path: "src/middlewares/objects-validators/newsletter-validator.js", error: error});
     }
 }
 

@@ -43,6 +43,7 @@ const register = async (req, res) => {
     } catch (error) {
         return res.status(500).json({
             message: "Internal server error",
+            path: "src/controller/user-controller.js",
             error: error
         });
     }
@@ -262,6 +263,7 @@ const activate = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             message: "Internal server error",
+            path: "src/controller/user-controller.js",
             error: error
         });
     }

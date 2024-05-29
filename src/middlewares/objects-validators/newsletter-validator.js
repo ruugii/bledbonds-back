@@ -29,6 +29,7 @@ const create = async (req, res, next) => {
     } catch (error) {
         return res.status(500).json({
             message: "Internal server error",
+            path: "src/middlewares/objects-validators/newsletter-validator.js",
             error: error
         });
     }
@@ -41,25 +42,28 @@ const activate = async (req, res, next) => {
         const [r] = await pool.query("SELECT * FROM users_activation WHERE validationCode = ?", [req.params.validateCode]);
         next();
     } catch (error) {
-        res.status(500).json({ message: "Internal server error", error: error});
+        res.status(500).json({ message: "Internal server error", path: "src/middlewares/objects-validators/newsletter-validator.js", error: error});
     }
 }
 
 const deleteEmail = async (req, res, next) => {
     try {
-        if (req.params.email === undefined) return res.status(400).json({ message: "Missing required params" });
-        const errors = [
-            await emailValidator(req.params.email, 255, false),
-        ];
+        if (req.params.email === undefined) return res.status(400).json(
+            {
+                message: "Missing required params",
+                status: 400
+            }
+        );
+        const errors = [];
         const filteredErrors = errors.filter(error => error.length > 0);
         const mappedErrors = filteredErrors.map((error, index) => ({ [index]: error }));
         const response = { message: "Validation errors", errors: mappedErrors };
-        if (errors.some(error => error.length > 0)) return res.status(400).json(response);
-        const [r] = await pool.query("SELECT * FROM newsletter WHERE email = ?", [req.params.email]);
-        if (r.length === 0) return res.status(400).json({ message: "Email not registered" });
+        if (errors.some(error => error.length > 0)) return res.status(400).json({response, status: 400});
+        const [r] = await pool.query("SELECT * FROM newsletter WHERE token = ?", [req.params.email]);
+        if (r.length === 0) return res.status(200).json({ message: "Token not registered", codeResponse: '1001'});
         next();
     } catch (error) {
-        res.status(500).json({ message: "Internal server error", error: error});
+        res.status(500).json({ message: "Internal server error", path: "src/middlewares/objects-validators/newsletter-validator.js", error: error, status: 500});
     }
 }
 

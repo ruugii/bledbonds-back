@@ -8,6 +8,7 @@ const getAll = async (req, res) => {
     } catch (error) {
         res.status(500).json({
             message: "Internal server error",
+            path: "src/controller/genere-controller.js",
             error: error
         });
     }
