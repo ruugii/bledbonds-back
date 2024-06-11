@@ -1,5 +1,6 @@
 const pool = require("../db/db");
-const { hashPassword } = require("../functions/hashPassword");
+const { createToken } = require("../functions/createToken");
+const { hashPassword, verifyPassword } = require("../functions/hashPassword");
 const nodemailer = require('nodemailer');
 
 const register = async (req, res) => {
@@ -14,14 +15,14 @@ const register = async (req, res) => {
                 port: 587,
                 secure: false,
                 auth: {
-                    user: 'noreply@order-now.es',
+                    user: 'noreply@bledbonds.es',
                     pass: 'rgrbrrr1'
                 }
             });
             let mailOptions = {
                 from: {
                     name: 'BledBonds',
-                    address: 'noreply@order-now.es'
+                    address: 'noreply@bledbonds.es'
                 },
                 to: req.body.email,
                 subject: 'Confirmación de registro en BledBonds',
@@ -269,7 +270,45 @@ const activate = async (req, res) => {
     }
 }
 
+const login = async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [req.body.email]);
+        if (rows.length === 0) {
+            return res.status(404).json({
+                message: "User not found"
+            });
+        }
+        if (rows[0].isActive === 0) {
+            return res.status(401).json({
+                message: "User not activated"
+            });
+        }
+        if (await verifyPassword(req.body.password, rows[0].passwd)) {
+          const token = await createToken({
+              id: rows[0].id,
+              email: rows[0].email,
+              data: rows[0]
+          });
+            return res.status(200).json({
+                message: "User logged in successfully",
+                token
+            });
+        } else {
+            return res.status(401).json({
+                message: "Invalid password"
+            });
+        }
+    } catch (error) {
+      console.log(error);
+        return res.status(500).json({
+            message: "Internal server error",
+            error: error
+        });
+    }
+}
+
 module.exports = {
     register,
-    activate
+    activate,
+    login
 }

@@ -20,4 +20,11 @@ router.put(
     userController.activate
 )
 
+router.post(
+    '/login/',
+    verifyAPIKey,
+    userValidator.login,
+    userController.login
+)
+
 module.exports = router;

@@ -50,7 +50,37 @@ const activate = async (req, res, next) => {
     }
 }
 
+const login = async (req, res, next) => {
+    try {
+        const requiredParams = ["email", "phone", "password"];
+        if (verifyRequiredParams(requiredParams, req, res) === 0) {
+            const errors = [
+                await emailValidator(req.body.email, 255, false),
+                await phoneValidator(req.body.phone),
+                await passwordValidator(req.body.password),
+            ];
+
+            const filteredErrors = errors.filter(error => error.length > 0);
+            const mappedErrors = filteredErrors.map((error, index) => ({ [index]: error }));
+            const response = { message: "Validation errors", errors: mappedErrors };
+            if (errors.some(error => error.length > 0)) return res.status(400).json(response);
+            return next();
+        } else {
+            return res.status(400).json({
+                message: "Missing required params"
+            });
+        }
+    } catch (error) {
+        return res.status(500).json({
+            message: "Internal server error",
+            path: "src/middlewares/objects-validators/newsletter-validator.js",
+            error: error
+        });
+    }
+}
+
 module.exports = {
     create,
-    activate
+    activate,
+    login
 };

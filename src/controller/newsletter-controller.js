@@ -16,14 +16,14 @@ const register = async (req, res) => {
         port: 587,
         secure: false,
         auth: {
-          user: 'noreply@order-now.es',
+          user: 'noreply@bledbonds.es',
           pass: 'rgrbrrr1'
         }
       });
       let mailOptions = {
         from: {
           name: 'BledBonds',
-          address: 'noreply@order-now.es'
+          address: 'noreply@bledbonds.es'
         },
         to: req.body.email,
         subject: 'Confirmación de registro en BledBonds',
@@ -285,14 +285,14 @@ const create = async (req, res) => {
         port: 587,
         secure: false,
         auth: {
-          user: 'noreply@order-now.es',
+          user: 'noreply@bledbonds.es',
           pass: 'rgrbrrr1'
         }
       });
       let mailOptions = {
         from: {
           name: 'BledBonds',
-          address: 'noreply@order-now.es'
+          address: 'noreply@bledbonds.es'
         },
         to: req.body.email,
         subject: 'Confirmación de registro en BledBonds',
