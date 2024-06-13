@@ -4,55 +4,56 @@ const { hashPassword, verifyPassword } = require("../functions/hashPassword");
 const nodemailer = require('nodemailer');
 
 const register = async (req, res) => {
-    try {
-        await pool.query('INSERT INTO `users`(`email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [req.body.email, req.body.phone, await hashPassword(req.body.password), 0, await getIdGenre(req.body.genre), req.body.name, req.body.birthDate, req.body.idFind, req.body.idOrientation, req.body.idStatus, req.body.bio, req.body.height, req.body.studyPlace, req.body.youWork, req.body.chargeWork, req.body.enterprise, req.body.drink, req.body.educativeLevel, req.body.personality, req.body.idZodiac, req.body.mascotas, req.body.idReligion]);
-        const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [req.body.email]);
-        const code = Math.floor(Math.random() * (999999 - 100000) + 100000);
-        await pool.query('INSERT INTO `users_activation`(`id_user`, `validationCode`) VALUES (?, ?)', [rows[0].id, code]);
-        nodemailer.createTestAccount((err, account) => {
-            let transporter = nodemailer.createTransport({
-                host: 'smtp.ionos.es',
-                port: 587,
-                secure: false,
-                auth: {
-                    user: 'noreply@bledbonds.es',
-                    pass: 'rgrbrrr1'
-                }
-            });
-            let mailOptions = {
-                from: {
-                    name: 'BledBonds',
-                    address: 'noreply@bledbonds.es'
-                },
-                to: req.body.email,
-                subject: 'Confirmación de registro en BledBonds',
-                html: html(req.body.name, code)
-            };
-            transporter.sendMail(mailOptions, (error, info) => {
-                if (error) {
-                    return res.status(500).json({
-                        message: "Error sending email",
-                        error: error
-                    })
-                } else {
-                    return res.status(201).json({
-                        message: "User created successfully"
-                    });
-                }
-            });
-        });
-    } catch (error) {
-        return res.status(500).json({
-            message: "Internal server error",
-            path: "src/controller/user-controller.js",
+  try {
+    await pool.query('INSERT INTO `users`(`email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [req.body.email, req.body.phone, await hashPassword(req.body.password), 0, await getIdGenre(req.body.genre), req.body.name, req.body.birthDate, req.body.idFind, req.body.idOrientation, req.body.idStatus, req.body.bio, req.body.height, req.body.studyPlace, req.body.youWork, req.body.chargeWork, req.body.enterprise, req.body.drink, req.body.educativeLevel, req.body.personality, req.body.idZodiac, req.body.mascotas, req.body.idReligion]);
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [req.body.email]);
+    const code = Math.floor(Math.random() * (999999 - 100000) + 100000);
+    await pool.query('INSERT INTO `users_activation`(`id_user`, `validationCode`) VALUES (?, ?)', [rows[0].id, code]);
+    await pool.query('INSERT INTO `users_role`(`user_id`, `role_id`) VALUES (?, (SELECT id FROM role WHERE NAME like "user"))', [rows[0].id]);
+    nodemailer.createTestAccount((err, account) => {
+      let transporter = nodemailer.createTransport({
+        host: 'smtp.ionos.es',
+        port: 587,
+        secure: false,
+        auth: {
+          user: 'noreply@bledbonds.es',
+          pass: 'rgrbrrr1'
+        }
+      });
+      let mailOptions = {
+        from: {
+          name: 'BledBonds',
+          address: 'noreply@bledbonds.es'
+        },
+        to: req.body.email,
+        subject: 'Confirmación de registro en BledBonds',
+        html: html(req.body.name, code)
+      };
+      transporter.sendMail(mailOptions, (error, info) => {
+        if (error) {
+          return res.status(500).json({
+            message: "Error sending email",
             error: error
-        });
-    }
+          })
+        } else {
+          return res.status(201).json({
+            message: "User created successfully"
+          });
+        }
+      });
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      path: "src/controller/user-controller.js",
+      error: error
+    });
+  }
 }
 
 const html = (name, code) => {
-    return (
-        `
+  return (
+    `
         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html dir="ltr" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office" lang="es">
  <head>
@@ -176,7 +177,7 @@ a[x-apple-data-detectors] {
                      <tr>
                       <td align="center" style="padding:0;Margin:0;padding-top:10px;padding-bottom:10px">
                         <span class="es-button-border" style="border-style:solid;border-color:#2CB543;background:#5C68E2;border-width:0px;display:inline-block;border-radius:6px;width:auto">
-                          <a href="bledbonds.com/activation/${code}" class="es-button" target="_blank" style="mso-style-priority:100 !important;text-decoration:none;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;color:#FFFFFF;font-size:20px;padding:10px 30px 10px 30px;display:inline-block;background:#5C68E2;border-radius:6px;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-weight:normal;font-style:normal;line-height:24px;width:auto;text-align:center;mso-padding-alt:0;mso-border-alt:10px solid #5C68E2;padding-left:30px;padding-right:30px">
+                          <a href="bledbonds.es/activation/${code}" class="es-button" target="_blank" style="mso-style-priority:100 !important;text-decoration:none;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;color:#FFFFFF;font-size:20px;padding:10px 30px 10px 30px;display:inline-block;background:#5C68E2;border-radius:6px;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-weight:normal;font-style:normal;line-height:24px;width:auto;text-align:center;mso-padding-alt:0;mso-border-alt:10px solid #5C68E2;padding-left:30px;padding-right:30px">
                             CONFIRMA EL EMAIL
                           </a>
                         </span>
@@ -243,72 +244,125 @@ a[x-apple-data-detectors] {
  </body>
 </html>
         `
-    )
+  )
 }
 
 const getIdGenre = async (genre) => {
-    let rows = [];
-    [rows] = await pool.query('SELECT id FROM genre WHERE genre_name = ?', [genre]);
+  let rows = [];
+  [rows] = await pool.query('SELECT id FROM genre WHERE genre_name = ?', [genre]);
 
-    return rows[0].id;
+  return rows[0].id;
 }
 
 const activate = async (req, res) => {
-    try {
-        const [rows] = await pool.query('SELECT * FROM users_activation WHERE validationCode = ?', [req.params.validateCode]);
-        await pool.query('UPDATE users SET isActive = 1 WHERE id = ?', [rows[0].id_user]);
-        await pool.query('DELETE FROM users_activation WHERE validationCode = ?', [req.params.validateCode]);
-        return res.status(200).json({
-            message: "User activated successfully"
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: "Internal server error",
-            path: "src/controller/user-controller.js",
-            error: error
-        });
-    }
+  try {
+    const [rows] = await pool.query('SELECT * FROM users_activation WHERE validationCode = ?', [req.params.validateCode]);
+    await pool.query('UPDATE users SET isActive = 1 WHERE id = ?', [rows[0].id_user]);
+    await pool.query('DELETE FROM users_activation WHERE validationCode = ?', [req.params.validateCode]);
+    return res.status(200).json({
+      message: "User activated successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Internal server error",
+      path: "src/controller/user-controller.js",
+      error: error
+    });
+  }
 }
 
 const login = async (req, res) => {
-    try {
-        const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [req.body.email]);
-        if (rows.length === 0) {
-            return res.status(404).json({
-                message: "User not found"
-            });
-        }
-        if (rows[0].isActive === 0) {
-            return res.status(401).json({
-                message: "User not activated"
-            });
-        }
-        if (await verifyPassword(req.body.password, rows[0].passwd)) {
-          const token = await createToken({
-              id: rows[0].id,
-              email: rows[0].email,
-              data: rows[0]
-          });
-            return res.status(200).json({
-                message: "User logged in successfully",
-                token
-            });
-        } else {
-            return res.status(401).json({
-                message: "Invalid password"
-            });
-        }
-    } catch (error) {
-      console.log(error);
-        return res.status(500).json({
-            message: "Internal server error",
-            error: error
-        });
+  try {
+    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [req.body.email]);
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: "User not found"
+      });
     }
+    if (rows[0].isActive === 0) {
+      return res.status(401).json({
+        message: "User not activated"
+      });
+    }
+    if (await verifyPassword(req.body.password, rows[0].passwd)) {
+      const token = await createToken({
+        id: rows[0].id,
+        email: rows[0].email,
+        data: rows[0]
+      });
+      const [role_] = await pool.query('SELECT name FROM role WHERE id = (SELECT role_id FROM users_role WHERE user_id = ?)', [rows[0].id]);
+      return res.status(200).json({
+        message: "User logged in successfully",
+        token,
+        role: role_[0].name
+      });
+    } else {
+      return res.status(401).json({
+        message: "Invalid password"
+      });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error
+    });
+  }
 }
 
+const list = async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT users.*, genre.genre_name, role.name AS role_name FROM users JOIN genre ON users.id_genre = genre.id JOIN users_role ON users.id = users_role.user_id JOIN role ON users_role.role_id = role.id;');
+    
+    rows.forEach(element => {
+      delete element.passwd;
+      delete element.isActive;
+      element.birthdate = element.birthdate.toISOString().split('T')[0];
+
+      Object.keys(element).forEach(key => {
+        if (element[key] === null) {
+          element[key] = `No especificado el ${key}`;
+        }
+      });
+
+      element.id_genre = element.genre_name;
+      delete element.genre_name;
+    });
+
+    const reorderKeys = (obj) => {
+      const { 
+        id, email, phone, id_genre, name, birthdate, role_name ,id_find, id_orientation, 
+        id_status, bio, height, studyPlace, you_work, charge_work, 
+        enterprise, drink, educative_level_id, personality, id_zodiac, 
+        mascotas, id_religion, ...rest 
+      } = obj;
+      return {
+        id, email, phone, id_genre, name, birthdate, role_name, id_find, id_orientation,
+        id_status, bio, height, studyPlace, you_work, charge_work, 
+        enterprise, drink, educative_level_id, personality, id_zodiac, 
+        mascotas, id_religion, ...rest
+      };
+    };
+
+    const reorderedRows = rows.map(reorderKeys);
+
+    console.log(reorderedRows);
+    return res.status(200).json({
+      users: reorderedRows
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      message: "Internal server error",
+      error: error
+    });
+  }
+}
+
+
 module.exports = {
-    register,
-    activate,
-    login
+  register,
+  activate,
+  login,
+  list
 }

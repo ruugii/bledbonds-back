@@ -19,4 +19,10 @@ router.delete(
     newsletterController.deleteEmail
 );
 
+router.get(
+    '/list/',
+    verifyAPIKey,
+    newsletterController.list
+);
+
 module.exports = router;

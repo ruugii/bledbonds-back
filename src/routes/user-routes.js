@@ -27,4 +27,10 @@ router.post(
     userController.login
 )
 
+router.get(
+    '/list/',
+    verifyAPIKey,
+    userController.list
+)
+
 module.exports = router;
