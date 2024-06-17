@@ -25,5 +25,11 @@
     "nodemailer": "6.9.13",
     "nodemon": "3.1.0",
     "validator": "13.11.0"
+  },
+  "devDependencies": {
+    "standard": "^17.1.0"
+  },
+  "eslintConfig": {
+    "extends": "standard"
   }
 }

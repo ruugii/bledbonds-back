@@ -1,28 +1,28 @@
-const { Router } = require('express');
-const verifyAPIKey = require('../middlewares/verifyAPIKey');
+const { Router } = require('express')
+const verifyAPIKey = require('../middlewares/verifyAPIKey')
 
-const newsletterController = require('../controller/newsletter-controller.js');
-const newsletterValidator = require('../middlewares/objects-validators/newsletter-validator.js');
+const newsletterController = require('../controller/newsletter-controller.js')
+const newsletterValidator = require('../middlewares/objects-validators/newsletter-validator.js')
 
-const router = Router();
+const router = Router()
 
 router.post(
-    '/create/',
-    verifyAPIKey,
-    newsletterValidator.create,
-    newsletterController.create
-);
+  '/create/',
+  verifyAPIKey,
+  newsletterValidator.create,
+  newsletterController.create
+)
 router.delete(
-    '/delete/:email',
-    verifyAPIKey,
-    newsletterValidator.deleteEmail,
-    newsletterController.deleteEmail
-);
+  '/delete/:email',
+  verifyAPIKey,
+  newsletterValidator.deleteEmail,
+  newsletterController.deleteEmail
+)
 
 router.get(
-    '/list/',
-    verifyAPIKey,
-    newsletterController.list
-);
+  '/list/',
+  verifyAPIKey,
+  newsletterController.list
+)
 
-module.exports = router;
+module.exports = router

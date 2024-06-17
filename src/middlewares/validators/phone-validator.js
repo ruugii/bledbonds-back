@@ -1,12 +1,12 @@
-const validator = require('validator');
+const validator = require('validator')
 
 const phoneValidator = async (phone) => {
-    const emailError = [];
-    if (!validator.isMobilePhone(phone)) {
-        emailError.push('Invalid phone');
-    }
+  const emailError = []
+  if (!validator.isMobilePhone(phone)) {
+    emailError.push('Invalid phone')
+  }
 
-    return emailError;
+  return emailError
 }
 
-module.exports = phoneValidator;
+module.exports = phoneValidator
