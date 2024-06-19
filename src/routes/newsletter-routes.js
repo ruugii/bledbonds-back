@@ -25,4 +25,18 @@ router.get(
   newsletterController.list
 )
 
+router.post(
+  '/sendTest/',
+  verifyAPIKey,
+  newsletterValidator.send,
+  newsletterController.sendTest
+)
+
+router.post(
+  '/send/',
+  verifyAPIKey,
+  newsletterValidator.send,
+  newsletterController.send
+)
+
 module.exports = router

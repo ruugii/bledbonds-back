@@ -63,8 +63,27 @@ const deleteEmail = async (req, res, next) => {
   }
 }
 
+const send = async (req, res, next) => {
+  try {
+    const requiredParams = ['subject', 'text', 'title']
+    if (verifyRequiredParams(requiredParams, req, res) === 0) {
+      return next()
+    } else {
+      return res.status(400).json({
+        message: 'Missing required params'
+      })
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Internal server error',
+      error: error
+    })
+  }
+}
+
 module.exports = {
   create,
   activate,
-  deleteEmail
+  deleteEmail,
+  send
 }
