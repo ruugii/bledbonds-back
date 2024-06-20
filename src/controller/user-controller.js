@@ -320,7 +320,7 @@ const login = async (req, res) => {
 
 const list = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT users.*, genre.genre_name, role.name AS role_name FROM users JOIN genre ON users.id_genre = genre.id JOIN users_role ON users.id = users_role.user_id JOIN role ON users_role.role_id = role.id;')
+    const [rows] = await pool.query('SELECT users.*, genre.genre_name, role.name AS role_name FROM users JOIN genre ON users.id_genre = genre.id LEFT JOIN users_role ON users.id = users_role.user_id LEFT JOIN role ON users_role.role_id = role.id;')
 
     rows.forEach(element => {
       delete element.passwd
