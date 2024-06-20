@@ -1428,7 +1428,7 @@ const send = async (req, res) => {
               name: 'BledBonds',
               address: 'noreply@bledbonds.es'
             },
-            to: 'roger.barrero.sorribas@gmail.com',
+            to: email[i].email,
             subject: req.body.subject,
             html: html_(req.body.title, req.body.text)
           }
