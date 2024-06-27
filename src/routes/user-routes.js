@@ -21,6 +21,20 @@ router.put(
 )
 
 router.post(
+  '/loginByCode/',
+  verifyAPIKey,
+  userValidator.loginByCode,
+  userController.loginByCode
+)
+
+router.post(
+  '/loginByCode/:code',
+  verifyAPIKey,
+  userValidator.loginByCode,
+  userController.loginByCode2
+)
+
+router.post(
   '/login/',
   verifyAPIKey,
   userValidator.login,
