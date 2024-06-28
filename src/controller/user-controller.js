@@ -939,7 +939,10 @@ const login = async (req, res) => {
         email: rows[0].email,
         data: rows[0]
       })
-      const [role_] = await pool.query('SELECT name FROM role WHERE id = (SELECT role_id FROM users_role WHERE user_id = ?)', [rows[0].id])
+      const [role_] = await pool.query('SELECT * FROM role WHERE id = (SELECT role_id FROM users_role WHERE user_id = ?)', [rows[0].id])
+      if (role_.length === 0) {
+        role_.push({ name: '' })
+      }
       return res.status(200).json({
         message: 'User logged in successfully',
         token,

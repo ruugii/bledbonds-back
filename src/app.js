@@ -33,3 +33,13 @@ app.use(
   '/api/v1/newsletters',
   require('./routes/newsletter-routes')
 )
+
+app.use(
+  '/api/v1/category',
+  require('./routes/category-routes')
+)
+
+app.use(
+  '/api/v1/blog',
+  require('./routes/blog-routes')
+)

@@ -1,0 +1,11 @@
+CREATE TABLE blog (
+  id INTEGER NOT NULL AUTO_INCREMENT,
+  created_by INTEGER,
+  title VARCHAR(255),
+  content TEXT,
+  resume TEXT,
+  id_category INTEGER,
+  PRIMARY KEY (id),
+  FOREIGN KEY (id_category) REFERENCES category(id) ON UPDATE CASCADE ON DELETE SET NULL,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+);
