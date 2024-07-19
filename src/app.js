@@ -43,3 +43,8 @@ app.use(
   '/api/v1/blog',
   require('./routes/blog-routes')
 )
+
+app.use(
+  '/api/v1/events',
+  require('./routes/events-routes')
+)

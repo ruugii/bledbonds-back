@@ -1,0 +1,5 @@
+CREATE TABLE fotos (
+    id INTEGER NOT NULL AUTO_INCREMENT,
+    foto_url VARCHAR(255),
+    PRIMARY KEY (id)
+);
