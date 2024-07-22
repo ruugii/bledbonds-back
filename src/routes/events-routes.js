@@ -10,10 +10,40 @@ router.get(
   eventsController.getAll
 )
 
-router.post(
-  '/create',
+router.get(
+  '/:id/participants',
   verifyAPIKey,
-  eventsController
+  eventsController.getParticipants
 )
+
+router.get(
+  '/:id/chat',
+  verifyAPIKey,
+  eventsController.getChat
+)
+
+router.put(
+  '/:id/updateEvent',
+  verifyAPIKey,
+  eventsController.updateEvent
+)
+
+router.delete(
+  '/:id/deleteEvent',
+  verifyAPIKey,
+  eventsController.deleteEvent
+)
+
+router.post(
+  '/createEvent',
+  verifyAPIKey,
+  eventsController.createEvent
+)
+
+// router.post(
+//   '/create',
+//   verifyAPIKey,
+//   eventsController
+// )
 
 module.exports = router

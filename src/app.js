@@ -4,6 +4,7 @@ const express = require('express')
 const cors = require('cors')
 const { PORT } = require('./config')
 const pool = require('./db/db')
+const multer = require('multer')
 
 // Initialize express app
 const app = express()
@@ -14,6 +15,10 @@ const io = new Server(server, {
   }
 })
 
+app.use(multer({
+  dest: 'public/img/'
+}).single('image'))
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   console.log('a user connected')
@@ -22,16 +27,8 @@ io.on('connection', (socket) => {
   })
 
   socket.on('chat message', async (msg) => {
-    const updateChat = async () => {
-      try {
-        pool.query('INSERT INTO chat (message, idChat) VALUES (?, ?)', [msg, msg.idChat])
-      } catch (error) {
-        console.error(error)
-      }
-    }
-
-    await updateChat()
-    io.emit('chat message', msg)
+    pool.query('INSERT INTO message (ID_User, ID_Chat, Message) VALUES (?, ?, ?)', [msg.userId, msg.chatId, msg.message])
+    io.emit(`chat message ${msg.chatId}`, msg)
   })
 })
 
@@ -55,4 +52,6 @@ app.use('/api/v1/category', require('./routes/category-routes'))
 app.use('/api/v1/blog', require('./routes/blog-routes'))
 
 // Uncomment and add the events routes when ready
-// app.use('/api/v1/events', require('./routes/events-routes'))
+app.use('/api/v1/events', require('./routes/events-routes'))
+
+app.use('/api/v1/img', require('./routes/img-routes'))

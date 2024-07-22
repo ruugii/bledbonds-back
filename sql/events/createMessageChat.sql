@@ -1,0 +1,9 @@
+CREATE TABLE message (
+  ID_message INTEGER NOT NULL AUTO_INCREMENT,
+  ID_user INTEGER,
+  ID_chat INTEGER,
+  message TEXT,
+  PRIMARY KEY (ID_message),
+  FOREIGN KEY (ID_user) REFERENCES users(ID),
+  FOREIGN KEY (ID_chat) REFERENCES chat(ID)
+)

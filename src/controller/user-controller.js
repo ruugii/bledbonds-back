@@ -934,19 +934,21 @@ const login = async (req, res) => {
       })
     }
     if (await verifyPassword(req.body.password, rows[0].passwd)) {
-      const token = await createToken({
-        id: rows[0].id,
-        email: rows[0].email,
-        data: rows[0]
-      })
       const [role_] = await pool.query('SELECT * FROM role WHERE id = (SELECT role_id FROM users_role WHERE user_id = ?)', [rows[0].id])
       if (role_.length === 0) {
         role_.push({ name: '' })
       }
+      const token = await createToken({
+        id: rows[0].id,
+        email: rows[0].email,
+        data: rows[0],
+        role: role_[0].name
+      })
       return res.status(200).json({
         message: 'User logged in successfully',
         token,
-        role: role_[0].name
+        role: role_[0].name,
+        id: rows[0].id
       })
     } else {
       return res.status(401).json({
