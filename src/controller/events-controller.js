@@ -3,7 +3,7 @@ const { knowTokenData } = require('../functions/knowTokenData')
 
 const getAll = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM events')
+    const [rows] = await pool.query('SELECT events.*, eventsImage.eventImageURL FROM events LEFT JOIN eventsImage ON events.id = eventsImage.eventId;')
     res.status(200).json(rows)
   } catch (error) {
     res.status(500).json({
