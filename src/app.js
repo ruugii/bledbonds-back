@@ -50,8 +50,10 @@ app.use('/api/v1/genders', require('./routes/genders-routes'))
 app.use('/api/v1/newsletters', require('./routes/newsletter-routes'))
 app.use('/api/v1/category', require('./routes/category-routes'))
 app.use('/api/v1/blog', require('./routes/blog-routes'))
+app.use('/api/v1/img', require('./routes/img-routes'))
 
 // Uncomment and add the events routes when ready
 app.use('/api/v1/events', require('./routes/events-routes'))
 
-app.use('/api/v1/img', require('./routes/img-routes'))
+app.use('/api/v1/chat', require('./routes/chat-routes'))
+

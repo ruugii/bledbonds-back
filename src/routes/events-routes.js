@@ -40,10 +40,6 @@ router.post(
   eventsController.createEvent
 )
 
-// router.post(
-//   '/create',
-//   verifyAPIKey,
-//   eventsController
-// )
+
 
 module.exports = router
