@@ -1166,17 +1166,56 @@ button.es-button {
                      <tr>
                       <td align='center' class='es-m-txt-c' style='padding:0;Margin:0;padding-bottom:10px'><h1 style='Margin:0;line-height:46px;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-size:46px;font-style:normal;font-weight:bold;color:#333333'>${title}</h1></td>
                      </tr>
-                     <ul>
                      ${text.map((t, i) => {
-                      return (
-                        `
-                        <tr>
-                        ${t.includes('<td ') ? (t) : (`<td align='left' style='padding:0;Margin:0;padding-bottom:5px;padding-top:10px'><p style='Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, helvetica neue, helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px'>${t.includes('- ') ? `<li style='-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;Margin-bottom:15px;margin-left:0;color:#333333;font-size:14px'>${t.replace('- ', '')}</li>` : t}</p></td>`)}
-                        </tr>
-                        `
-                      )
-                    }).join('')}
-                    </ul>
+      if (t.includes('<td ')) {
+        return (
+          `<tr>
+                              ${t}
+                            </tr>`
+        )
+      } else if (t.startsWith('-') && t.replace('-', '').trim().startsWith('<b>')) {
+        return (
+          `<tr>
+                              <td align='left' style='padding:0;Margin:0;padding-bottom:5px;padding-top:10px'>
+                                <p style='Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, helvetica neue, helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px'>
+                                  <ul>
+                                    <li style='-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;Margin-bottom:15px;margin-left:0;color:#333333;font-size:14px'>
+                                      <b>
+                                      ${t.replace('-', '').replace('<b>', '').replace('</b>', '')}
+                                      </b>
+                                    </li>
+                                  </ul>
+                                </p>
+                              </td>
+                            </tr>`
+        )
+      } else if (t.startsWith('-')) {
+        console.log(t)
+        return (
+          `<tr>
+                              <td align='left' style='padding:0;Margin:0;padding-bottom:5px;padding-top:10px'>
+                                <p style='Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, helvetica neue, helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px'>
+                                  <ul>
+                                    <li style='-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;Margin-bottom:15px;margin-left:0;color:#333333;font-size:14px'>
+                                      ${t.replace('-', '')}
+                                    </li>
+                                  </ul>
+                                </p>
+                              </td>
+                            </tr>`
+        )
+      } else {
+        return (
+          `<tr>
+                              <td align='left' style='padding:0;Margin:0;padding-bottom:5px;padding-top:10px'>
+                                <p style='Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, helvetica neue, helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px'>
+                                  ${t}
+                                </p>
+                              </td>
+                            </tr>`
+        )
+      }
+    }).join('')}
                    </table></td>
                  </tr>
                </table></td>
