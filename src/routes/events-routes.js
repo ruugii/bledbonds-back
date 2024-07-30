@@ -40,6 +40,4 @@ router.post(
   eventsController.createEvent
 )
 
-
-
 module.exports = router
