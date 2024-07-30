@@ -5,6 +5,7 @@ const cors = require('cors')
 const { PORT } = require('./config')
 const pool = require('./db/db')
 const multer = require('multer')
+const verifyAPIKey = require('./middlewares/verifyAPIKey')
 
 // Initialize express app
 const app = express()
@@ -54,6 +55,15 @@ app.use('/api/v1/img', require('./routes/img-routes'))
 
 // Uncomment and add the events routes when ready
 app.use('/api/v1/events', require('./routes/events-routes'))
-
 app.use('/api/v1/chat', require('./routes/chat-routes'))
 
+// Citas a ciegas
+app.use('/api/v1/citas-a-ciegas', require('./routes/citas-a-ciegas-routes'))
+
+app.use(verifyAPIKey, (req, res, next) => {
+  res.status(404).json({
+    message: 'Not found',
+    route: req.url,
+    method: req.method
+  })
+})
