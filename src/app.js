@@ -60,6 +60,9 @@ app.use('/api/v1/chat', require('./routes/chat-routes'))
 // Citas a ciegas
 app.use('/api/v1/citas-a-ciegas', require('./routes/citas-a-ciegas-routes'))
 
+// masterdata
+app.use('/api/v1/masterdata', require('./routes/masterdata-routes'))
+
 app.use(verifyAPIKey, (req, res, next) => {
   res.status(404).json({
     message: 'Not found',
