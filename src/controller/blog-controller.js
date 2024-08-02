@@ -16,7 +16,6 @@ const getAll = async (req, res) => {
 
 const getById = async (req, res) => {
   try {
-    console.log(req.params.id)
     const [rows] = await pool.query('SELECT blog.*, category.name AS category, users.name AS postBy FROM blog LEFT JOIN category ON blog.id_category = category.id LEFT JOIN users ON blog.created_by = users.id WHERE blog.id = ?;', [req.params.id])
     res.status(200).json(rows)
   } catch (error) {
@@ -32,9 +31,6 @@ const create = async (req, res) => {
   try {
     const { title, resume, text, category, token } = req.body
     if (!title || !resume || !text || !category || !token) {
-      console.log('All fields are required')
-      console.log(title, resume, text, category, token)
-      console.log(req.body)
       return res.status(400).json({
         message: 'All fields are required',
         title: title,
@@ -45,7 +41,6 @@ const create = async (req, res) => {
       })
     }
     const tokenDecoded = knowTokenData(token)
-    console.log(tokenDecoded)
     const [idCategory] = await pool.query('SELECT id FROM category WHERE name = ?', [category])
     const [rows] = await pool.query('INSERT INTO blog (title, resume, content, id_category, created_by) VALUES (?, ?, ?, ?, ?)', [title, resume, text, idCategory[0].id, tokenDecoded.id])
     if (rows) {

@@ -944,7 +944,7 @@ const login = async (req, res) => {
         data: rows[0],
         role: role_[0].name
       })
-      let perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null ? true : false
+      const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null
       return res.status(200).json({
         message: 'User logged in successfully',
         token,
@@ -958,7 +958,6 @@ const login = async (req, res) => {
       })
     }
   } catch (error) {
-    console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
       error: error
@@ -1039,12 +1038,10 @@ const list = async (req, res) => {
 
     const reorderedRows = rows.map(reorderKeys)
 
-    console.log(reorderedRows)
     return res.status(200).json({
       users: reorderedRows
     })
   } catch (error) {
-    console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
       error: error
@@ -1099,7 +1096,6 @@ const loginByCode = async (req, res) => {
       }
     })
   } catch (error) {
-    console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
       error: error
@@ -1140,7 +1136,6 @@ const loginByCode2 = async (req, res) => {
       })
     }
   } catch (error) {
-    console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
       error: error

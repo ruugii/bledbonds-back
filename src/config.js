@@ -6,8 +6,6 @@ dotenv.config({
   path: path.resolve(__dirname, `../.env.${process.env.NODE_ENV || 'prod'}`)
 })
 
-console.log(process.env.NODE_ENV)
-
 const PORT = process.env.PORT
 const DB_HOST = process.env.DB_HOST
 const DB_USER = process.env.DB_USER

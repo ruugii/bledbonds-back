@@ -38,7 +38,6 @@ const getChat = async (req, res) => {
     }
 
     const chatId = eventChatRows[0].ID
-    console.log(chatId)
 
     // Fetch chat information
     const [chatInfoRows] = await pool.query('SELECT * FROM chat WHERE id = ?', [chatId])
@@ -73,13 +72,10 @@ const updateEvent = async (req, res) => {
     if (!req.headers['user-key']) {
       return res.status(401).json({ message: 'Unauthorized' })
     } else if (knowTokenData(req.headers['user-key']).role !== 'admin') {
-      console.log(knowTokenData(req.headers['user-key']))
       return res.status(403).json({ message: 'Forbidden' })
     }
     const { id } = req.params
     const { name, description, date, place } = req.body
-
-    console.log(req.body)
 
     await pool.query('UPDATE events SET event_name = ?, event_description = ?, event_date = ?, event_location = ? WHERE id = ?', [name, description, date, place, id])
 
@@ -97,19 +93,16 @@ const deleteEvent = async (req, res) => {
     if (!req.headers['user-key']) {
       return res.status(401).json({ message: 'Unauthorized' })
     } else if (knowTokenData(req.headers['user-key']).role !== 'admin') {
-      console.log(knowTokenData(req.headers['user-key']))
       return res.status(403).json({ message: 'Forbidden' })
     }
     const { id } = req.params
 
-    console.log(req.body)
     await pool.query('DELETE FROM participants WHERE id_event = ?', [id])
     await pool.query('DELETE FROM event_chat WHERE ID_event = ?', [id])
     await pool.query('DELETE FROM events WHERE id = ?', [id])
 
     res.status(200).json({ message: 'Event updated' })
   } catch (error) {
-    console.log(error)
     res.status(500).json({
       message: 'Internal server error',
       error: error.message
@@ -126,11 +119,8 @@ const createEvent = async (req, res) => {
 
     const tokenData = knowTokenData(userKey)
     if (tokenData.role !== 'admin') {
-      console.log(tokenData)
       return res.status(403).json({ message: 'Forbidden' })
     }
-
-    console.log(req.body)
 
     const { name, description, date, place, url } = req.body
 
@@ -179,8 +169,6 @@ const createEvent = async (req, res) => {
 
     res.status(201).json({ message: 'Event created' })
   } catch (error) {
-    console.log(error)
-
     // Rollback the transaction in case of error
     await pool.query('ROLLBACK')
 

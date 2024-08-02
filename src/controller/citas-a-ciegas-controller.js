@@ -15,11 +15,8 @@ const create = async (req, res) => {
 
     do {
       const userRandom = Math.floor(Math.random() * users.length)
-      console.log(users)
       idRandom = users[userRandom].ID_User
     } while (idRandom === idUser)
-
-    console.log('idRandom', idRandom)
 
     await pool.query('INSERT INTO chat (name) VALUES (?)', [`Cita a ciega ${idUser} con ${idRandom}`])
     const [chatRows] = await pool.query('SELECT * FROM chat WHERE name = ?', [`Cita a ciega ${idUser} con ${idRandom}`])
@@ -29,7 +26,6 @@ const create = async (req, res) => {
     }
 
     const chatId = chatRows[0].ID
-    console.log('chatId', chatId)
 
     await pool.query('INSERT INTO user_chat (ID_user, ID_chat) VALUES (?, ?)', [idUser, chatId])
     await pool.query('INSERT INTO user_chat (ID_user, ID_chat) VALUES (?, ?)', [idRandom, chatId])
@@ -38,7 +34,6 @@ const create = async (req, res) => {
       message: 'Se ha creado la cita a ciegas con éxito'
     })
   } catch (error) {
-    console.log(error)
     res.status(500).json({
       message: 'Internal server error',
       error: error.message

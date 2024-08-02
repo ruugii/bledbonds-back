@@ -22,11 +22,6 @@ app.use(multer({
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log('a user connected')
-  socket.on('disconnect', () => {
-    console.log('user disconnected')
-  })
-
   socket.on('chat message', async (msg) => {
     pool.query('INSERT INTO message (ID_User, ID_Chat, Message) VALUES (?, ?, ?)', [msg.userId, msg.chatId, msg.message])
     io.emit(`chat message ${msg.chatId}`, msg)

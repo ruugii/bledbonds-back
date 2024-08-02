@@ -1190,7 +1190,6 @@ button.es-button {
                             </tr>`
         )
       } else if (t.startsWith('-')) {
-        console.log(t)
         return (
           `<tr>
                               <td align='left' style='padding:0;Margin:0;padding-bottom:5px;padding-top:10px'>
@@ -1306,9 +1305,7 @@ const activate = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    console.log(req.body.email)
     const token = getRandomToken()
-    console.log(token)
     await pool.query('INSERT INTO `newsletter`(`email`, `token`) VALUES (?, ?)', [req.body.email, token])
     nodemailer.createTestAccount((err, account) => {
       if (err) {
@@ -1446,7 +1443,6 @@ const send = async (req, res) => {
     const [email] = await pool.query('SELECT email FROM newsletter')
     let errorSendEmail = false
     const errorMsg = []
-    console.log(email)
     for (let i = 0; i < email.length; i++) {
       nodemailer.createTestAccount((err, account) => {
         if (err) {
