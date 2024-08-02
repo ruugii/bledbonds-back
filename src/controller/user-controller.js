@@ -944,11 +944,13 @@ const login = async (req, res) => {
         data: rows[0],
         role: role_[0].name
       })
+      let perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null ? true : false
       return res.status(200).json({
         message: 'User logged in successfully',
         token,
         role: role_[0].name,
-        id: rows[0].id
+        id: rows[0].id,
+        perfilCompleto
       })
     } else {
       return res.status(401).json({
