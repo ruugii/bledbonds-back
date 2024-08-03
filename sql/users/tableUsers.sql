@@ -26,3 +26,7 @@ CREATE TABLE users (
     PRIMARY KEY (id),
     FOREIGN KEY (id_genre) REFERENCES genre(id)
 )
+
+ALTER TABLE users ADD FOREIGN KEY (id_find) REFERENCES find(id);
+ALTER TABLE users ADD FOREIGN KEY (id_orientation) REFERENCES sexualidad(id);
+ALTER TABLE users ADD FOREIGN KEY (id_status) REFERENCES `estado-civil`(id);
