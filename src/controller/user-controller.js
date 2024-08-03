@@ -40,7 +40,7 @@ const register = async (req, res) => {
           if (error) {
             return res.status(500).json({
               message: 'Error sending email',
-              error: error
+              error
             })
           } else {
             return res.status(201).json({
@@ -54,7 +54,7 @@ const register = async (req, res) => {
     return res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/user-controller.js',
-      error: error
+      error
     })
   }
 }
@@ -915,7 +915,7 @@ const activate = async (req, res) => {
     res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/user-controller.js',
-      error: error
+      error
     })
   }
 }
@@ -960,7 +960,7 @@ const login = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: 'Internal server error',
-      error: error
+      error
     })
   }
 }
@@ -1044,7 +1044,7 @@ const list = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: 'Internal server error',
-      error: error
+      error
     })
   }
 }
@@ -1087,7 +1087,7 @@ const loginByCode = async (req, res) => {
       if (error) {
         return res.status(500).json({
           message: 'Error sending email',
-          error: error
+          error
         })
       } else {
         return res.status(201).json({
@@ -1098,7 +1098,7 @@ const loginByCode = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: 'Internal server error',
-      error: error
+      error
     })
   }
 }
@@ -1138,7 +1138,7 @@ const loginByCode2 = async (req, res) => {
   } catch (error) {
     return res.status(500).json({
       message: 'Internal server error',
-      error: error
+      error
     })
   }
 }
@@ -1169,7 +1169,7 @@ const isPerfilCompleto = async (req, res) => {
     console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
-      error: error
+      error
     })
   }
 }
