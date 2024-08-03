@@ -1174,6 +1174,51 @@ const isPerfilCompleto = async (req, res) => {
   }
 }
 
+const update = async (req, res) => {
+  try {
+    const user_token = req.headers['user-token']
+    const { id } = knowTokenData(user_token)
+    await pool.query(`UPDATE users SET email = ?, phone = ?, name = ?, birthdate = ?, id_find = ?, id_orientation = ?, id_status = ?, bio = ?, height = ?, studyPlace = ?, you_work = ?, charge_work = ?, enterprise = ?, drink = ?, educative_level_id = ?, personality = ?, id_zodiac = ?, mascotas = ?, id_religion = ? WHERE id = ?`, [req.body.email, req.body.phone, req.body.name, req.body.birthdate, req.body.id_find, req.body.id_orientation, req.body.id_status, req.body.bio, req.body.height, req.body.studyPlace, req.body.you_work, req.body.charge_work, req.body.enterprise, req.body.drink, req.body.educative_level_id, req.body.personality, req.body.id_zodiac, req.body.mascotas, req.body.id_religion, id])
+    return res.status(200).json({
+      message: 'User updated successfully'
+    })
+  } catch (error) {
+    console.log(error)
+    
+    return res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
+const getToken = async (req, res) => {
+  try {
+    const user_token = req.headers['user-token']
+    const { id } = knowTokenData(user_token)
+    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: 'User not found'
+      })
+    }
+    if (rows[0].isActive === 0) {
+      return res.status(401).json({
+        message: 'User not activated'
+      })
+    }
+    return res.status(200).json({
+      message: 'Token',
+      user_info: rows[0]
+    })
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
 module.exports = {
   register,
   activate,
@@ -1181,5 +1226,7 @@ module.exports = {
   list,
   loginByCode,
   loginByCode2,
-  isPerfilCompleto
+  isPerfilCompleto,
+  update,
+  getToken
 }

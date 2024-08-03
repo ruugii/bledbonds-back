@@ -53,4 +53,16 @@ router.get(
   userController.isPerfilCompleto
 )
 
+router.get(
+  '/get/token',
+  verifyAPIKey,
+  userController.getToken
+)
+
+router.put(
+  '/update',
+  verifyAPIKey,
+  userController.update
+)
+
 module.exports = router
