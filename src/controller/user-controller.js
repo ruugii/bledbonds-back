@@ -1,4 +1,4 @@
-/* eslint-disable camelcase */
+const { knowTokenData } = require('../functions/knowTokenData')
 const pool = require('../db/db')
 const { createToken } = require('../functions/createToken')
 const { hashPassword, verifyPassword } = require('../functions/hashPassword')
@@ -1143,11 +1143,43 @@ const loginByCode2 = async (req, res) => {
   }
 }
 
+const isPerfilCompleto = async (req, res) => {
+  try {
+    console.log(req.headers['user-token'])
+
+    const userToken = req.headers['user-token']
+    const { id } = knowTokenData(userToken)
+    const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: 'User not found'
+      })
+    }
+    if (rows[0].isActive === 0) {
+      return res.status(401).json({
+        message: 'User not activated'
+      })
+    }
+    const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null
+    return res.status(200).json({
+      message: 'Perfil completo',
+      perfilCompleto
+    })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      message: 'Internal server error',
+      error: error
+    })
+  }
+}
+
 module.exports = {
   register,
   activate,
   login,
   list,
   loginByCode,
-  loginByCode2
+  loginByCode2,
+  isPerfilCompleto
 }

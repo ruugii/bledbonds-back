@@ -47,4 +47,10 @@ router.get(
   userController.list
 )
 
+router.get(
+  '/isPerfilCompleto/',
+  verifyAPIKey,
+  userController.isPerfilCompleto
+)
+
 module.exports = router
