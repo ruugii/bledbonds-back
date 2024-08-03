@@ -16,6 +16,7 @@ const SECRET_KEY = process.env.SECRET_KEY
 const GOOGLE_SECRET_KEY = process.env.GOOGLE_SECRET_KEY
 const MONGO_URI = process.env.MONGO_URI
 const DB_PORT = process.env.DB_PORT
+const JWT_SECRET = process.env.JWT_SECRET
 
 module.exports = {
   PORT,
@@ -27,5 +28,6 @@ module.exports = {
   SECRET_KEY,
   GOOGLE_SECRET_KEY,
   MONGO_URI,
-  DB_PORT
+  DB_PORT,
+  JWT_SECRET
 }
