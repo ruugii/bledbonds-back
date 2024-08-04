@@ -944,12 +944,17 @@ const login = async (req, res) => {
         data: rows[0],
         role: role_[0].name
       })
-      const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null
+      console.log(token);
+      const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [rows[0].id]);
+      console.log(imageRows);
+      
+      const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null && imageRows.length > 0
       return res.status(200).json({
         message: 'User logged in successfully',
         token,
         role: role_[0].name,
         id: rows[0].id,
+        image: imageRows,
         perfilCompleto
       })
     } else {
@@ -958,6 +963,7 @@ const login = async (req, res) => {
       })
     }
   } catch (error) {
+    console.log(error);
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -972,9 +978,10 @@ const list = async (req, res) => {
     rows.forEach(element => {
       delete element.passwd
       delete element.isActive
-      element.birthdate = element.birthdate.toISOString().split('T')[0]
 
       Object.keys(element).forEach(key => {
+        console.log(element);
+        
         if (element[key] === null) {
           element[key] = `No especificado el ${key}`
         }
@@ -1035,13 +1042,15 @@ const list = async (req, res) => {
         ...rest
       }
     }
-
+    console.log(rows)
+    
     const reorderedRows = rows.map(reorderKeys)
 
     return res.status(200).json({
       users: reorderedRows
     })
   } catch (error) {
+    console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1160,7 +1169,8 @@ const isPerfilCompleto = async (req, res) => {
         message: 'User not activated'
       })
     }
-    const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null
+    const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [id]);
+    const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null && imageRows.length > 0
     return res.status(200).json({
       message: 'Perfil completo',
       perfilCompleto
@@ -1176,21 +1186,57 @@ const isPerfilCompleto = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const user_token = req.headers['user-token']
-    const { id } = knowTokenData(user_token)
-    await pool.query(`UPDATE users SET email = ?, phone = ?, name = ?, birthdate = ?, id_find = ?, id_orientation = ?, id_status = ?, bio = ?, height = ?, studyPlace = ?, you_work = ?, charge_work = ?, enterprise = ?, drink = ?, educative_level_id = ?, personality = ?, id_zodiac = ?, mascotas = ?, id_religion = ? WHERE id = ?`, [req.body.email, req.body.phone, req.body.name, req.body.birthdate, req.body.id_find, req.body.id_orientation, req.body.id_status, req.body.bio, req.body.height, req.body.studyPlace, req.body.you_work, req.body.charge_work, req.body.enterprise, req.body.drink, req.body.educative_level_id, req.body.personality, req.body.id_zodiac, req.body.mascotas, req.body.id_religion, id])
+    const user_token = req.headers['user-token'];
+    const { id } = knowTokenData(user_token);
+
+    const fieldsToUpdate = {};
+    const validFields = [
+      'email', 'phone', 'name', 'birthdate', 'id_find', 'id_orientation',
+      'id_status', 'bio', 'height', 'studyPlace', 'you_work', 'charge_work',
+      'enterprise', 'drink', 'educative_level_id', 'personality', 'id_zodiac',
+      'mascotas', 'id_religion'
+    ];
+
+    validFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        fieldsToUpdate[field] = req.body[field];
+      }
+    });
+
+    if (Object.keys(fieldsToUpdate).length > 0) {
+      const setClause = Object.keys(fieldsToUpdate)
+        .map((field, index) => `${field} = ?`)
+        .join(', ');
+      const values = Object.values(fieldsToUpdate);
+
+      values.push(id);
+      console.log(...values);
+
+      await pool.query(
+        `UPDATE users SET ${setClause} WHERE id = ?`,
+        values
+      );
+    }
+
+    if (req.body.photo) {
+      await pool.query(
+        'INSERT INTO user_image(user_id, image) VALUES (?, ?)',
+        [id, req.body.photo]
+      );
+    }
+
     return res.status(200).json({
-      message: 'User updated successfully'
-    })
+      message: 'User updated successfully',
+    });
   } catch (error) {
-    console.log(error)
-    
+    console.error(error);
+
     return res.status(500).json({
       message: 'Internal server error',
-      error
-    })
+      error,
+    });
   }
-}
+};
 
 const getToken = async (req, res) => {
   try {
