@@ -944,10 +944,10 @@ const login = async (req, res) => {
         data: rows[0],
         role: role_[0].name
       })
-      console.log(token);
-      const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [rows[0].id]);
-      console.log(imageRows);
-      
+      console.log(token)
+      const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [rows[0].id])
+      console.log(imageRows)
+
       const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null && imageRows.length > 0
       return res.status(200).json({
         message: 'User logged in successfully',
@@ -963,7 +963,7 @@ const login = async (req, res) => {
       })
     }
   } catch (error) {
-    console.log(error);
+    console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -980,8 +980,7 @@ const list = async (req, res) => {
       delete element.isActive
 
       Object.keys(element).forEach(key => {
-        console.log(element);
-        
+        console.log(element)
         if (element[key] === null) {
           element[key] = `No especificado el ${key}`
         }
@@ -1043,7 +1042,7 @@ const list = async (req, res) => {
       }
     }
     console.log(rows)
-    
+
     const reorderedRows = rows.map(reorderKeys)
 
     return res.status(200).json({
@@ -1169,7 +1168,7 @@ const isPerfilCompleto = async (req, res) => {
         message: 'User not activated'
       })
     }
-    const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [id]);
+    const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [id])
     const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null && imageRows.length > 0
     return res.status(200).json({
       message: 'Perfil completo',
@@ -1186,57 +1185,57 @@ const isPerfilCompleto = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const user_token = req.headers['user-token'];
-    const { id } = knowTokenData(user_token);
+    const user_token = req.headers['user-token']
+    const { id } = knowTokenData(user_token)
 
-    const fieldsToUpdate = {};
+    const fieldsToUpdate = {}
     const validFields = [
       'email', 'phone', 'name', 'birthdate', 'id_find', 'id_orientation',
       'id_status', 'bio', 'height', 'studyPlace', 'you_work', 'charge_work',
       'enterprise', 'drink', 'educative_level_id', 'personality', 'id_zodiac',
       'mascotas', 'id_religion'
-    ];
+    ]
 
     validFields.forEach(field => {
       if (req.body[field] !== undefined) {
-        fieldsToUpdate[field] = req.body[field];
+        fieldsToUpdate[field] = req.body[field]
       }
-    });
+    })
 
     if (Object.keys(fieldsToUpdate).length > 0) {
       const setClause = Object.keys(fieldsToUpdate)
         .map((field, index) => `${field} = ?`)
-        .join(', ');
-      const values = Object.values(fieldsToUpdate);
+        .join(', ')
+      const values = Object.values(fieldsToUpdate)
 
-      values.push(id);
-      console.log(...values);
+      values.push(id)
+      console.log(...values)
 
       await pool.query(
         `UPDATE users SET ${setClause} WHERE id = ?`,
         values
-      );
+      )
     }
 
     if (req.body.photo) {
       await pool.query(
         'INSERT INTO user_image(user_id, image) VALUES (?, ?)',
         [id, req.body.photo]
-      );
+      )
     }
 
     return res.status(200).json({
-      message: 'User updated successfully',
-    });
+      message: 'User updated successfully'
+    })
   } catch (error) {
-    console.error(error);
+    console.error(error)
 
     return res.status(500).json({
       message: 'Internal server error',
-      error,
-    });
+      error
+    })
   }
-};
+}
 
 const getToken = async (req, res) => {
   try {
