@@ -973,7 +973,8 @@ const login = async (req, res) => {
 
 const list = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT users.*, genre.genre_name, role.name AS role_name FROM users JOIN genre ON users.id_genre = genre.id LEFT JOIN users_role ON users.id = users_role.user_id LEFT JOIN role ON users_role.role_id = role.id;')
+    const [rows] = await pool.query(
+      'SELECT users.*, genre.genre_name, role.name AS roleName, find.text AS findText, sexualidad.text AS orientationText, `estado-civil`.text AS statusText FROM users JOIN genre ON users.id_genre = genre.id LEFT JOIN users_role ON users.id = users_role.user_id LEFT JOIN role ON users_role.role_id = role.id LEFT JOIN find ON users.id_find = find.id LEFT JOIN sexualidad ON users.id_orientation = sexualidad.id LEFT JOIN `estado-civil` ON users.id_status = `estado-civil`.id;')
 
     rows.forEach(element => {
       delete element.passwd
@@ -997,7 +998,7 @@ const list = async (req, res) => {
         id_genre,
         name,
         birthdate,
-        role_name,
+        roleName,
         id_find,
         id_orientation,
         id_status,
@@ -1013,6 +1014,9 @@ const list = async (req, res) => {
         id_zodiac,
         mascotas,
         id_religion,
+        findText,
+        orientationText,
+        statusText,
         ...rest
       } = obj
       return {
@@ -1022,10 +1026,10 @@ const list = async (req, res) => {
         id_genre,
         name,
         birthdate,
-        role_name,
-        id_find,
-        id_orientation,
-        id_status,
+        roleName,
+        findText,
+        orientationText,
+        statusText,
         bio,
         height,
         studyPlace,
@@ -1224,6 +1228,34 @@ const update = async (req, res) => {
       )
     }
 
+    if (req.body.language) {
+      const [currentLangs] = await pool.query('SELECT lang_id FROM user_lang WHERE user_id = ?', [id])
+
+      const currentLangIds = currentLangs.map(lang => lang.lang_id)
+      const newLangIds = req.body.language
+
+      const langIdsToInsert = newLangIds.filter(langId => !currentLangIds.includes(langId))
+      const langIdsToDelete = currentLangIds.filter(langId => !newLangIds.includes(langId))
+
+      if (langIdsToInsert.length > 0) {
+        for (const langId of langIdsToInsert) {
+          await pool.query(
+            'INSERT INTO user_lang(user_id, lang_id) VALUES (?, ?)',
+            [id, langId]
+          )
+        }
+      }
+
+      if (langIdsToDelete.length > 0) {
+        for (const langId of langIdsToDelete) {
+          await pool.query(
+            'DELETE FROM user_lang WHERE user_id = ? AND lang_id = ?',
+            [id, langId]
+          )
+        }
+      }
+    }
+
     return res.status(200).json({
       message: 'User updated successfully'
     })
@@ -1242,6 +1274,8 @@ const getToken = async (req, res) => {
     const user_token = req.headers['user-token']
     const { id } = knowTokenData(user_token)
     const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
+    const [langRows] = await pool.query('SELECT * FROM user_lang WHERE user_id = ?', [id])
+    rows[0].language = langRows.map(lang => lang.lang_id)
     if (rows.length === 0) {
       return res.status(404).json({
         message: 'User not found'
