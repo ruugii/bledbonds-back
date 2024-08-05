@@ -30,3 +30,6 @@ CREATE TABLE users (
 ALTER TABLE users ADD FOREIGN KEY (id_find) REFERENCES find(id);
 ALTER TABLE users ADD FOREIGN KEY (id_orientation) REFERENCES sexualidad(id);
 ALTER TABLE users ADD FOREIGN KEY (id_status) REFERENCES `estado-civil`(id);
+ALTER TABLE users ADD FOREIGN KEY (educative_level_id) REFERENCES educative_level(id);
+ALTER TABLE users ADD FOREIGN KEY (id_zodiac) REFERENCES zodiac(id);
+ALTER TABLE users ADD FOREIGN KEY (id_religion) REFERENCES religion(id);

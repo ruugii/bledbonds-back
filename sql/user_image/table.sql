@@ -6,3 +6,6 @@ CREATE TABLE IF NOT EXISTS `user_image` (
   PRIMARY KEY (`id`),
   FOREIGN KEY (`user_id`) REFERENCES users(`id`)
 )
+
+ALTER TABLE `user_image`
+MODIFY COLUMN `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;

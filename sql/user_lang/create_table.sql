@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS user_lang (
+  id INTEGER NOT NULL AUTO_INCREMENT,
+  user_id INTEGER NOT NULL,
+  lang_id INTEGER NOT NULL,
+  PRIMARY KEY (id),
+  FOREIGN KEY (user_id) REFERENCES user(id),
+  FOREIGN KEY (lang_id) REFERENCES lang(id)
+)
