@@ -1,0 +1,5 @@
+CREATE TABLE aficiones (
+  id INTEGER NOT NULL AUTO_INCREMENT,
+  text VARCHAR(255),
+  PRIMARY KEY (id)
+)
