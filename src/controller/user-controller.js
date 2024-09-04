@@ -1189,8 +1189,8 @@ const isPerfilCompleto = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const user_token = req.headers['user-token']
-    const { id } = knowTokenData(user_token)
+    const userToken = req.headers['user-token']
+    const { id } = knowTokenData(userToken)
 
     const fieldsToUpdate = {}
     const validFields = [
@@ -1271,11 +1271,13 @@ const update = async (req, res) => {
 
 const getToken = async (req, res) => {
   try {
-    const user_token = req.headers['user-token']
-    const { id } = knowTokenData(user_token)
+    const userToken = req.headers['user-token']
+    const { id } = knowTokenData(userToken)
     const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
     const [langRows] = await pool.query('SELECT * FROM user_lang WHERE user_id = ?', [id])
+    const [photo] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [id])
     rows[0].language = langRows.map(lang => lang.lang_id)
+    rows[0].photos = photo.map(photo => photo.image)
     if (rows.length === 0) {
       return res.status(404).json({
         message: 'User not found'
@@ -1298,6 +1300,52 @@ const getToken = async (req, res) => {
   }
 }
 
+const getToLike = async (req, res) => {
+  try {
+    let fotos = []
+    do {
+      const userToken = req.headers['user-token']
+      console.log(userToken)
+      const { id } = knowTokenData(userToken)
+      const [userRandom] = await pool.query('SELECT * FROM users WHERE id != ? ORDER BY RAND() LIMIT 1', [id])
+      const [foto] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [userRandom[0].id])
+      fotos = foto
+      const fotoAux = foto.map(foto => foto.image)
+      userRandom[0].fotos = fotoAux
+      return res.status(200).json({
+        message: 'To like',
+        userRandom
+      })
+    } while  (fotos.length === 0)
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
+const deleteUser = async (req, res) => {
+  try {
+    const user = await pool.query('SELECT * FROM users WHERE ID_User = ?', [req.params.id])
+    if (user.length === 0) {
+      return res.status(404).json({
+        message: 'User not found'
+      })
+    } else {
+      await pool.query('DELETE FROM users WHERE ID_User = ?', [req.params.id])
+      return res.status(200).json({
+        message: 'User deleted'
+      })
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
 module.exports = {
   register,
   activate,
@@ -1307,5 +1355,7 @@ module.exports = {
   loginByCode2,
   isPerfilCompleto,
   update,
-  getToken
+  getToken,
+  getToLike,
+  deleteUser
 }

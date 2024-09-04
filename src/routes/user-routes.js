@@ -65,4 +65,10 @@ router.put(
   userController.update
 )
 
+router.get(
+  '/get/toLike',
+  verifyAPIKey,
+  userController.getToLike
+)
+
 module.exports = router
