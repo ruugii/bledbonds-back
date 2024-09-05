@@ -65,6 +65,8 @@ app.use('/api/v1/citas-a-ciegas', require('./routes/citas-a-ciegas-routes'))
 // masterdata
 app.use('/api/v1/masterdata', require('./routes/masterdata-routes'))
 
+app.use('/api/v1/actions', require('./routes/actions-routes'))
+
 app.use(verifyAPIKey, (req, res, next) => {
   res.status(404).json({
     message: 'Not found',
