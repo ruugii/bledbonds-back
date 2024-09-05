@@ -1303,20 +1303,22 @@ const getToken = async (req, res) => {
 const getToLike = async (req, res) => {
   try {
     let fotos = []
+    let userRandom = []
     do {
       const userToken = req.headers['user-token']
       console.log(userToken)
       const { id } = knowTokenData(userToken)
-      const [userRandom] = await pool.query('SELECT * FROM users WHERE id != ? ORDER BY RAND() LIMIT 1', [id])
+      const [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? ORDER BY RAND() LIMIT 1', [id])
       const [foto] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [userRandom[0].id])
       fotos = foto
+      userRandom = userRandom_
       const fotoAux = foto.map(foto => foto.image)
       userRandom[0].fotos = fotoAux
-      return res.status(200).json({
-        message: 'To like',
-        userRandom
-      })
-    } while  (fotos.length === 0)
+    } while (fotos.length === 0)
+    return res.status(200).json({
+      message: 'To like',
+      userRandom
+    })
   } catch (error) {
     return res.status(500).json({
       message: 'Internal server error',
