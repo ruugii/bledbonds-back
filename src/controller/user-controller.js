@@ -1380,7 +1380,6 @@ const getMatchList = async (req, res) => {
     const data = knowTokenData(userToken).data
     const id = data.id
     const [rows] = await pool.query('SELECT a1.id_user AS u1 FROM actions a1 JOIN actions a2 ON a1.id_user = a2.id_liked AND a1.id_liked = a2.id_user WHERE a1.id_action = 1 AND a2.id_action = 1 AND (a1.id_user = 11 OR a1.id_liked = 11)', [id, id])
-    console.log(rows)
     const matchList = []
     for (const row of rows) {
       if (row.u1 === id) {
@@ -1398,7 +1397,6 @@ const getMatchList = async (req, res) => {
       matchList
     })
   } catch (error) {
-    console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
       error
