@@ -1300,16 +1300,54 @@ const getToken = async (req, res) => {
   }
 }
 
+const calcGenreId = (id, genre) => {
+  if (id === 1 && genre === 1) {
+    return 2
+  } else if (id === 1 && genre === 2) {
+    return 1
+  } else if (id === 2 && genre === 1) {
+    return 1
+  } else if (id === 3 && genre === 2) {
+    return 2
+  } else if (id === 4) {
+    return 0
+  } else if (id === 5) {
+    return 0
+  } else if (id === 6) {
+    return 0
+  } else if (id === 7) {
+    return 0
+  } else if (id === 8) {
+    return 0
+  } else {
+    return 0
+  }
+}
+
 const getToLike = async (req, res) => {
   try {
     let fotos = []
     let userRandom = []
     do {
       const userToken = req.headers['user-token']
-      console.log(userToken)
-      const { id } = knowTokenData(userToken)
-      const [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? ORDER BY RAND() LIMIT 1', [id])
-      const [foto] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [userRandom[0].id])
+      const data = knowTokenData(userToken).data
+      const id = data.id
+      const idOrientation = data.id_orientation
+      const idGenre = data.id_genre
+      const genreId = calcGenreId(idOrientation, idGenre)
+      console.log(genreId)
+      let userRandom_
+      if (genreId === 0) {
+        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) ORDER BY RAND() LIMIT 1', [id, id])
+      } else {
+        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHEREid_user = ?) AND id_genre = ? ORDER BY RAND() LIMIT 1', [id, id, genreId])
+      }
+      if (userRandom_.length === 0) {
+        return res.status(404).json({
+          message: 'No more users to like'
+        })
+      }
+      const [foto] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [userRandom_[0].id])
       fotos = foto
       userRandom = userRandom_
       const fotoAux = foto.map(foto => foto.image)
