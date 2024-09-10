@@ -1340,7 +1340,7 @@ const getToLike = async (req, res) => {
       if (genreId === 0) {
         [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) ORDER BY RAND() LIMIT 1', [id, id])
       } else {
-        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHEREid_user = ?) AND id_genre = ? ORDER BY RAND() LIMIT 1', [id, id, genreId])
+        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) AND id_genre = ? ORDER BY RAND() LIMIT 1', [id, id, genreId])
       }
       if (userRandom_.length === 0) {
         return res.status(404).json({
