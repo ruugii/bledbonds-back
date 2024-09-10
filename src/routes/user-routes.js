@@ -71,4 +71,10 @@ router.get(
   userController.getToLike
 )
 
+router.get(
+  '/get/matchList',
+  verifyAPIKey,
+  userController.getMatchList
+)
+
 module.exports = router
