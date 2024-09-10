@@ -1374,6 +1374,38 @@ const deleteUser = async (req, res) => {
   }
 }
 
+const getMatchList = async (req, res) => {
+  try {
+    const userToken = req.headers['user-token']
+    const data = knowTokenData(userToken).data
+    const id = data.id
+    const [rows] = await pool.query('SELECT a1.id_user AS u1 FROM actions a1 JOIN actions a2 ON a1.id_user = a2.id_liked AND a1.id_liked = a2.id_user WHERE a1.id_action = 1 AND a2.id_action = 1 AND (a1.id_user = 11 OR a1.id_liked = 11)', [id, id])
+    console.log(rows)
+    const matchList = []
+    for (const row of rows) {
+      if (row.u1 === id) {
+        continue
+      } else {
+        const [rows2] = await pool.query('SELECT users.*, genre.genre_name, role.name AS roleName, find.text AS findText, sexualidad.text AS orientationText, `estado-civil`.text AS statusText FROM users JOIN genre ON users.id_genre = genre.id LEFT JOIN users_role ON users.id = users_role.user_id LEFT JOIN role ON users_role.role_id = role.id LEFT JOIN find ON users.id_find = find.id LEFT JOIN sexualidad ON users.id_orientation = sexualidad.id LEFT JOIN `estado-civil` ON users.id_status = `estado-civil`.id WHERE users.id = ?;', [row.u1])
+        const [foto] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [rows2[0].id])
+        const fotoAux = foto.map(foto => foto.image)
+        rows2[0].fotos = fotoAux
+        matchList.push(rows2[0])
+      }
+    }
+    return res.status(200).json({
+      message: 'Match list',
+      matchList
+    })
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
 module.exports = {
   register,
   activate,
@@ -1385,5 +1417,6 @@ module.exports = {
   update,
   getToken,
   getToLike,
-  deleteUser
+  deleteUser,
+  getMatchList
 }
