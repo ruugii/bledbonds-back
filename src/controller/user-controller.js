@@ -944,10 +944,7 @@ const login = async (req, res) => {
         data: rows[0],
         role: role_[0].name
       })
-      console.log(token)
       const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [rows[0].id])
-      console.log(imageRows)
-
       const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null && imageRows.length > 0
       return res.status(200).json({
         message: 'User logged in successfully',
@@ -963,7 +960,6 @@ const login = async (req, res) => {
       })
     }
   } catch (error) {
-    console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -981,7 +977,6 @@ const list = async (req, res) => {
       delete element.isActive
 
       Object.keys(element).forEach(key => {
-        console.log(element)
         if (element[key] === null) {
           element[key] = `No especificado el ${key}`
         }
@@ -1045,7 +1040,6 @@ const list = async (req, res) => {
         ...rest
       }
     }
-    console.log(rows)
 
     const reorderedRows = rows.map(reorderKeys)
 
@@ -1053,7 +1047,6 @@ const list = async (req, res) => {
       users: reorderedRows
     })
   } catch (error) {
-    console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1157,8 +1150,6 @@ const loginByCode2 = async (req, res) => {
 
 const isPerfilCompleto = async (req, res) => {
   try {
-    console.log(req.headers['user-token'])
-
     const userToken = req.headers['user-token']
     const { id } = knowTokenData(userToken)
     const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
@@ -1179,7 +1170,6 @@ const isPerfilCompleto = async (req, res) => {
       perfilCompleto
     })
   } catch (error) {
-    console.log(error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1213,7 +1203,6 @@ const update = async (req, res) => {
       const values = Object.values(fieldsToUpdate)
 
       values.push(id)
-      console.log(...values)
 
       await pool.query(
         `UPDATE users SET ${setClause} WHERE id = ?`,
@@ -1335,7 +1324,6 @@ const getToLike = async (req, res) => {
       const idOrientation = data.id_orientation
       const idGenre = data.id_genre
       const genreId = calcGenreId(idOrientation, idGenre)
-      console.log(genreId)
       let userRandom_
       if (genreId === 0) {
         [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) ORDER BY RAND() LIMIT 1', [id, id])
