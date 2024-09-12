@@ -1321,14 +1321,15 @@ const getToLike = async (req, res) => {
       const userToken = req.headers['user-token']
       const data = knowTokenData(userToken).data
       const id = data.id
-      const idOrientation = data.id_orientation
-      const idGenre = data.id_genre
+      const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
+      const idOrientation = user[0].id_orientation
+      const idGenre = user[0].id_genre
       const genreId = calcGenreId(idOrientation, idGenre)
       let userRandom_
       if (genreId === 0) {
-        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) ORDER BY RAND() LIMIT 1', [id, id])
+        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) ORDER BY RAND() LIMIT 50', [id, id])
       } else {
-        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) AND id_genre = ? ORDER BY RAND() LIMIT 1', [id, id, genreId])
+        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) AND id_genre = ? ORDER BY RAND() LIMIT 50', [id, id, genreId])
       }
       if (userRandom_.length === 0) {
         return res.status(404).json({
