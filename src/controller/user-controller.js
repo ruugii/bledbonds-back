@@ -1390,6 +1390,8 @@ const getMatchList = async (req, res) => {
         const [foto] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [rows2[0].id])
         const fotoAux = foto.map(foto => foto.image)
         rows2[0].fotos = fotoAux
+        const [link] = await pool.query(`SELECT uc1.ID_chat FROM user_chat uc1 JOIN user_chat uc2 ON uc1.ID_chat = uc2.ID_chat WHERE uc1.ID_user = ? AND uc2.ID_user = ?;`, [rows2[0].id, id])
+        rows2[0].link = link[0].ID_chat
         matchList.push(rows2[0])
       }
     }
