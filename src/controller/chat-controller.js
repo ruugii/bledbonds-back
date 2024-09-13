@@ -31,25 +31,26 @@ const getChat = async (req, res) => {
     const { id } = req.params
 
     // Fetch event chat information
-    const [eventChatRows] = await pool.query('SELECT * FROM event_chat WHERE id_event = ?', [id])
+    const [eventChatRows] = await pool.query('SELECT * FROM chat WHERE ID = ?', [id])
 
     if (eventChatRows.length === 0) {
-      return res.status(404).json({ message: 'Event chat not found' })
-    }
-
-    const chatId = eventChatRows[0].ID
-
-    // Fetch chat information
-    const [chatInfoRows] = await pool.query('SELECT * FROM chat WHERE id = ?', [chatId])
-
-    if (chatInfoRows.length === 0) {
       return res.status(404).json({ message: 'Chat not found' })
     }
 
-    const chatInfo = chatInfoRows[0]
+    const chatInfo = eventChatRows[0]
 
     // Fetch messages
-    const [messages] = await pool.query('SELECT * FROM message WHERE id_chat = ?', [chatId])
+    const [messages] = await pool.query('SELECT * FROM message WHERE id_chat = ?', [chatInfo.ID])
+    const user_token = req.headers['user-token']
+    const data = knowTokenData(user_token)
+    const userId = data.id
+    for (const message of messages) {
+      if (message.ID_user === userId) {
+        message.user = true
+      } else {
+        message.user = false
+      }
+    }
 
     // Construct response
     const chatResponse = {
