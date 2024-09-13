@@ -6,6 +6,7 @@ const { PORT } = require('./config')
 const pool = require('./db/db')
 const multer = require('multer')
 const verifyAPIKey = require('./middlewares/verifyAPIKey')
+const { knowTokenData } = require('./functions/knowTokenData')
 
 // Initialize express app
 const app = express()
@@ -23,7 +24,8 @@ app.use(multer({
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   socket.on('chat message', async (msg) => {
-    pool.query('INSERT INTO message (ID_User, ID_Chat, Message) VALUES (?, ?, ?)', [msg.userId, msg.chatId, msg.message])
+    const userID = knowTokenData(msg.token).id
+    pool.query('INSERT INTO message (ID_User, ID_Chat, Message) VALUES (?, ?, ?)', [userID, msg.chatId, msg.message])
     io.emit(`chat message ${msg.chatId}`, msg)
   })
 })
