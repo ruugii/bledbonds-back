@@ -3,8 +3,16 @@ const { knowTokenData } = require('../functions/knowTokenData')
 
 const getAll = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT chat.* FROM chat')
-    res.status(200).json(rows)
+    const user_token = req.headers['user-token']
+    const data = knowTokenData(user_token)
+    const userId = data.id
+    const [rows] = await pool.query('SELECT * FROM user_chat WHERE ID_user = ?', [userId])
+    const chats = []
+    for (const chat of rows) {
+      const [chat] = await pool.query('SELECT chat.* FROM chat WHERE ID = ?', [chat.ID_chat])
+      chats.push(chat)
+    }
+    res.status(200).json(chats)
   } catch (error) {
     res.status(500).json({
       message: 'Internal server error',
