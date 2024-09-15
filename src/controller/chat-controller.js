@@ -9,8 +9,8 @@ const getAll = async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM user_chat WHERE ID_user = ?', [userId])
     const chats = []
     for (const chat of rows) {
-      const [chat] = await pool.query('SELECT chat.* FROM chat WHERE ID = ?', [chat.ID_chat])
-      chats.push(chat)
+      const [chat_] = await pool.query('SELECT chat.* FROM chat WHERE ID = ?', [chat.ID_chat])
+      chats.push(chat_[0])
     }
     res.status(200).json(chats)
   } catch (error) {
