@@ -77,4 +77,10 @@ router.get(
   userController.getMatchList
 )
 
+router.post(
+  '/create/test/user/:numUsers',
+  verifyAPIKey,
+  userController.createTestUser
+)
+
 module.exports = router

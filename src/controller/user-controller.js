@@ -1317,11 +1317,14 @@ const getToLike = async (req, res) => {
   try {
     let fotos = []
     let userRandom = []
+    let count = 0
     do {
       const userToken = req.headers['user-token']
       const data = knowTokenData(userToken).data
       const id = data.id
       const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
+      const [count_] = await pool.query('SELECT COUNT(*) FROM actions WHERE id_action = 1 AND date_insert = CURRENT_DATE AND id_user = ?;', [id])
+      count = count_
       const idOrientation = user[0].id_orientation
       const idGenre = user[0].id_genre
       const genreId = calcGenreId(idOrientation, idGenre)
@@ -1344,7 +1347,8 @@ const getToLike = async (req, res) => {
     } while (fotos.length === 0)
     return res.status(200).json({
       message: 'To like',
-      userRandom
+      userRandom,
+      count
     })
   } catch (error) {
     return res.status(500).json({
@@ -1380,7 +1384,8 @@ const getMatchList = async (req, res) => {
     const userToken = req.headers['user-token']
     const data = knowTokenData(userToken).data
     const id = data.id
-    const [rows] = await pool.query('SELECT a1.id_user AS u1 FROM actions a1 JOIN actions a2 ON a1.id_user = a2.id_liked AND a1.id_liked = a2.id_user WHERE a1.id_action = 1 AND a2.id_action = 1 AND (a1.id_user = 11 OR a1.id_liked = 11)', [id, id])
+    const [rows] = await pool.query('SELECT a1.id_user AS u1 FROM actions a1 JOIN actions a2 ON a1.id_user = a2.id_liked AND a1.id_liked = a2.id_user WHERE a1.id_action = 1 AND a2.id_action = 1 AND (a1.id_user = ? OR a1.id_liked = ?)', [id, id])
+    const [count] = await pool.query('SELECT COUNT(*) FROM actions WHERE id_action = 1 AND date_insert = CURRENT_DATE AND id_user = ?;', [id])
     const matchList = []
     for (const row of rows) {
       if (row.u1 === id) {
@@ -1397,9 +1402,73 @@ const getMatchList = async (req, res) => {
     }
     return res.status(200).json({
       message: 'Match list',
-      matchList
+      matchList,
+      count
     })
   } catch (error) {
+    return res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
+const createTestUser = async (req, res) => {
+  try {
+    const { numUsers } = req.params
+
+    // Consulta a las tablas necesarias
+    const [genders] = await pool.query('SELECT * FROM genre')
+    const [findOptions] = await pool.query('SELECT * FROM find')
+    const [orientations] = await pool.query('SELECT * FROM sexualidad')
+    const [statuses] = await pool.query('SELECT * FROM estado_civil')
+    const [religions] = await pool.query('SELECT * FROM religion')
+    const [zodiacs] = await pool.query('SELECT * FROM zodiac')
+    const [educationLevels] = await pool.query('SELECT * FROM educative_level')
+
+    for (let i = 0; i < numUsers; i++) {
+      // Datos aleatorios
+      const gender = genders[Math.floor(Math.random() * genders.length)].id
+      const name = `${Math.random().toString(36).substring(2, 7)}-test`
+      const birthdate = new Date(
+        1970 + Math.floor(Math.random() * 30), // Año entre 1970 y 2000
+        Math.floor(Math.random() * 12), // Mes
+        Math.floor(Math.random() * 28) + 1 // Día
+      )
+      const idFind = findOptions[Math.floor(Math.random() * findOptions.length)].id
+      const email = `${name.toLowerCase()}@gmail.com`
+      const phone = Math.floor(600000000 + Math.random() * 400000000) // Número de teléfono válido
+      const password = await hashPassword(Math.random().toString(36).substring(2, 7))
+      const orientation = orientations[Math.floor(Math.random() * orientations.length)].id
+      const idStatus = statuses[Math.floor(Math.random() * statuses.length)].id
+      const bio = Math.random().toString(36).substring(2, 50) // Bio con longitud mayor
+      const height = Math.floor(Math.random() * 50) + 150 // Altura entre 150cm y 200cm
+      const studyPlace = `School-${Math.random().toString(36).substring(2, 7)}`
+      const youWork = `Job-${Math.random().toString(36).substring(2, 7)}`
+      const chargeWork = `Position-${Math.random().toString(36).substring(2, 7)}`
+      const enterprise = `Enterprise-${Math.random().toString(36).substring(2, 7)}`
+      const drink = Math.random() < 0.5 // 0 o 1 para bebida
+      const educativeLevel = educationLevels[Math.floor(Math.random() * educationLevels.length)].id
+      const personality = Math.random().toString(36).substring(2, 50)
+      const idZodiac = zodiacs[Math.floor(Math.random() * zodiacs.length)].id
+      const mascotas = Math.random() < 0.5 // 0 o 1 para mascotas
+      const idReligion = religions[Math.floor(Math.random() * religions.length)].id
+      const image = 'https://picsum.photos/200/300'
+
+      // Inserción de usuarios
+      await pool.query(
+        'INSERT INTO `users`(`email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [email, phone, password, 1, gender, name, birthdate, idFind, orientation, idStatus, bio, height, studyPlace, youWork, chargeWork, enterprise, drink, educativeLevel, personality, idZodiac, mascotas, idReligion]
+      )
+      const [user] = await pool.query('SELECT * FROM users WHERE email = ?', [email])
+      await pool.query('INSERT INTO user_image(user_id, image) VALUES (?, ?)', [user[0].id, image])
+    }
+
+    return res.status(200).json({
+      message: `${numUsers} users created successfully`
+    })
+  } catch (error) {
+    console.error('Error creating test users:', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1419,5 +1488,6 @@ module.exports = {
   getToken,
   getToLike,
   deleteUser,
-  getMatchList
+  getMatchList,
+  createTestUser
 }
