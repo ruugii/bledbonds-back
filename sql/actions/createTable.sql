@@ -7,3 +7,6 @@ CREATE TABLE `actions` (
   FOREIGN KEY (`id_user`) REFERENCES `users` (`id`),
   FOREIGN KEY (`id_liked`) REFERENCES `users` (`id`)
 )
+
+ALTER TABLE `actions`
+ADD COLUMN `date` DATE NOT NULL DEFAULT CURRENT_DATE;
