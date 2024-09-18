@@ -10,4 +10,10 @@ router.post(
   actionsController.like
 )
 
+router.post(
+  '/dislike',
+  verifyAPIKey,
+  actionsController.dislike
+)
+
 module.exports = router

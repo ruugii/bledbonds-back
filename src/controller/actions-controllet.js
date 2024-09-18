@@ -49,7 +49,8 @@ const dislike = async (req, res) => {
     const { idUser, action } = req.body
     await pool.query('INSERT INTO actions (id_user, id_action, id_liked) VALUES (?, ?, ?)', [id, action, idUser])
     return res.status(200).json({
-      message: 'Dislike created successfully'
+      message: 'Dislike created successfully',
+      IsMatch: false
     })
   } catch (error) {
     return res.status(500).json({
