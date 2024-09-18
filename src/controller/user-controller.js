@@ -1421,7 +1421,7 @@ const createTestUser = async (req, res) => {
     const [genders] = await pool.query('SELECT * FROM genre')
     const [findOptions] = await pool.query('SELECT * FROM find')
     const [orientations] = await pool.query('SELECT * FROM sexualidad')
-    const [statuses] = await pool.query('SELECT * FROM estado_civil')
+    const [statuses] = await pool.query('SELECT * FROM `estado-civil`')
     const [religions] = await pool.query('SELECT * FROM religion')
     const [zodiacs] = await pool.query('SELECT * FROM zodiac')
     const [educationLevels] = await pool.query('SELECT * FROM educative_level')
