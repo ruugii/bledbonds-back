@@ -83,4 +83,10 @@ router.post(
   userController.createTestUser
 )
 
+router.post(
+  '/delete/form',
+  verifyAPIKey,
+  userController.deleteForm
+)
+
 module.exports = router

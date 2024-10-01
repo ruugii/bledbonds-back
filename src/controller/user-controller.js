@@ -6,15 +6,98 @@ const nodemailer = require('nodemailer')
 
 const register = async (req, res) => {
   try {
-    await pool.query('INSERT INTO `users`(`email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [req.body.email, req.body.phone, await hashPassword(req.body.password), 0, await getIdGenre(req.body.genre), req.body.name, req.body.birthDate, req.body.idFind, req.body.idOrientation, req.body.idStatus, req.body.bio, req.body.height, req.body.studyPlace, req.body.youWork, req.body.chargeWork, req.body.enterprise, req.body.drink, req.body.educativeLevel, req.body.personality, req.body.idZodiac, req.body.mascotas, req.body.idReligion])
-    const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [req.body.email])
+    // Iniciar una transacción
+    await pool.query('START TRANSACTION')
+
+    // Encontrar el primer ID disponible
+    let nextId
+
+    // Obtener el ID mínimo y máximo existentes
+    const [idRows] = await pool.query('SELECT MIN(id) AS minId, MAX(id) AS maxId FROM users FOR UPDATE')
+    const minId = idRows[0].minId || 0
+    const maxId = idRows[0].maxId || 0
+
+    if (minId > 1) {
+      // Si el ID mínimo es mayor que 1, el 1 está disponible
+      nextId = 1
+    } else {
+      // Buscar el primer ID faltante en la secuencia
+      const [missingIdRows] = await pool.query(`
+        SELECT t1.id + 1 AS nextId
+        FROM users t1
+        LEFT JOIN users t2 ON t1.id + 1 = t2.id
+        WHERE t2.id IS NULL
+        ORDER BY t1.id
+        LIMIT 1
+        FOR UPDATE
+      `)
+
+      if (missingIdRows.length > 0) {
+        nextId = missingIdRows[0].nextId
+      } else {
+        // Si no hay IDs faltantes, asignar el siguiente ID después del máximo existente
+        nextId = maxId + 1
+      }
+    }
+
+    // Insertar el nuevo usuario con el ID encontrado
+    await pool.query(
+      'INSERT INTO `users`(`id`, `email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`, `lat`, `lon`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        nextId,
+        req.body.email,
+        req.body.phone,
+        await hashPassword(req.body.password),
+        0,
+        await getIdGenre(req.body.genre),
+        req.body.name,
+        req.body.birthDate,
+        req.body.idFind,
+        req.body.idOrientation,
+        req.body.idStatus,
+        req.body.bio,
+        req.body.height,
+        req.body.studyPlace,
+        req.body.youWork,
+        req.body.chargeWork,
+        req.body.enterprise,
+        req.body.drink,
+        req.body.educativeLevel,
+        req.body.personality,
+        req.body.idZodiac,
+        req.body.mascotas,
+        req.body.idReligion,
+        req.body.lat,
+        req.body.lon
+      ]
+    )
+
+    // Actualizar el AUTO_INCREMENT si es necesario
+    const [autoIncRows] = await pool.query('SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "users"')
+    const currentAutoIncrement = autoIncRows[0].AUTO_INCREMENT
+
+    if (nextId >= currentAutoIncrement) {
+      await pool.query('ALTER TABLE users AUTO_INCREMENT = ?', [nextId + 1])
+    }
+
+    // Confirmar la transacción
+    await pool.query('COMMIT')
+
+    // Obtener los datos del usuario recién insertado
+    const [userRows] = await pool.query('SELECT * FROM users WHERE id = ?', [nextId])
+
     const code = Math.floor(Math.random() * (999999 - 100000) + 100000)
-    await pool.query('INSERT INTO `users_activation`(`id_user`, `validationCode`) VALUES (?, ?)', [rows[0].id, code])
-    await pool.query('INSERT INTO `users_role`(`user_id`, `role_id`) VALUES (?, (SELECT id FROM role WHERE NAME like "user"))', [rows[0].id])
+    await pool.query('INSERT INTO `users_activation`(`id_user`, `validationCode`) VALUES (?, ?)', [nextId, code])
+    await pool.query(
+      'INSERT INTO `users_role`(`user_id`, `role_id`) VALUES (?, (SELECT id FROM role WHERE NAME LIKE "user"))',
+      [nextId]
+    )
+
+    // Configuración y envío del correo electrónico
     nodemailer.createTestAccount((err, account) => {
       if (err) {
         return res.status(500).json({
-          message: 'Error creating email account',
+          message: 'Error al crear la cuenta de correo',
           error: err.message
         })
       } else {
@@ -32,27 +115,29 @@ const register = async (req, res) => {
             name: 'BledBonds',
             address: 'noreply@bledbonds.es'
           },
-          to: req.body.email,
+          to: userRows[0].email, // Usamos el email del usuario recién insertado
           subject: 'Confirmación de registro en BledBonds',
-          html: html(req.body.name, code)
+          html: html(userRows[0].name, code) // Usamos el nombre del usuario desde la base de datos
         }
         transporter.sendMail(mailOptions, (error, info) => {
           if (error) {
             return res.status(500).json({
-              message: 'Error sending email',
+              message: 'Error al enviar el correo electrónico',
               error
             })
           } else {
             return res.status(201).json({
-              message: 'User created successfully'
+              message: 'Usuario creado exitosamente'
             })
           }
         })
       }
     })
   } catch (error) {
+    // Revertir la transacción en caso de error
+    await pool.query('ROLLBACK')
     return res.status(500).json({
-      message: 'Internal server error',
+      message: 'Error interno del servidor',
       path: 'src/controller/user-controller.js',
       error
     })
@@ -1187,7 +1272,7 @@ const update = async (req, res) => {
       'email', 'phone', 'name', 'birthdate', 'id_find', 'id_orientation',
       'id_status', 'bio', 'height', 'studyPlace', 'you_work', 'charge_work',
       'enterprise', 'drink', 'educative_level_id', 'personality', 'id_zodiac',
-      'mascotas', 'id_religion'
+      'mascotas', 'id_religion', 'lat', 'lon'
     ]
 
     validFields.forEach(field => {
@@ -1395,7 +1480,7 @@ const getMatchList = async (req, res) => {
         const [foto] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [rows2[0].id])
         const fotoAux = foto.map(foto => foto.image)
         rows2[0].fotos = fotoAux
-        const [link] = await pool.query(`SELECT uc1.ID_chat FROM user_chat uc1 JOIN user_chat uc2 ON uc1.ID_chat = uc2.ID_chat WHERE uc1.ID_user = ? AND uc2.ID_user = ?;`, [rows2[0].id, id])
+        const [link] = await pool.query('SELECT uc1.ID_chat FROM user_chat uc1 JOIN user_chat uc2 ON uc1.ID_chat = uc2.ID_chat WHERE uc1.ID_user = ? AND uc2.ID_user = ?;', [rows2[0].id, id])
         rows2[0].link = link[0].ID_chat
         matchList.push(rows2[0])
       }
@@ -1417,16 +1502,33 @@ const createTestUser = async (req, res) => {
   try {
     const { numUsers } = req.params
 
+    // Iniciar una transacción
+    await pool.query('START TRANSACTION')
+
     // Consulta a las tablas necesarias
-    const [genders] = await pool.query('SELECT * FROM genre')
-    const [findOptions] = await pool.query('SELECT * FROM find')
-    const [orientations] = await pool.query('SELECT * FROM sexualidad')
-    const [statuses] = await pool.query('SELECT * FROM `estado-civil`')
-    const [religions] = await pool.query('SELECT * FROM religion')
-    const [zodiacs] = await pool.query('SELECT * FROM zodiac')
-    const [educationLevels] = await pool.query('SELECT * FROM educative_level')
+    const [genders] = await pool.query('SELECT * FROM genre FOR UPDATE')
+    const [findOptions] = await pool.query('SELECT * FROM find FOR UPDATE')
+    const [orientations] = await pool.query('SELECT * FROM sexualidad FOR UPDATE')
+    const [statuses] = await pool.query('SELECT * FROM `estado-civil` FOR UPDATE')
+    const [religions] = await pool.query('SELECT * FROM religion FOR UPDATE')
+    const [zodiacs] = await pool.query('SELECT * FROM zodiac FOR UPDATE')
+    const [educationLevels] = await pool.query('SELECT * FROM educative_level FOR UPDATE')
+
+    // Obtener todos los IDs existentes de la tabla users
+    const [existingIdsRows] = await pool.query('SELECT id FROM users FOR UPDATE')
+    const existingIds = existingIdsRows.map(row => row.id)
+
+    let nextId = 1
+    const assignedIds = new Set()
 
     for (let i = 0; i < numUsers; i++) {
+      // Encontrar el siguiente ID disponible
+      while (existingIds.includes(nextId) || assignedIds.has(nextId)) {
+        nextId++
+      }
+
+      assignedIds.add(nextId)
+
       // Datos aleatorios
       const gender = genders[Math.floor(Math.random() * genders.length)].id
       const name = `${Math.random().toString(36).substring(2, 7)}-test`
@@ -1447,27 +1549,68 @@ const createTestUser = async (req, res) => {
       const youWork = `Job-${Math.random().toString(36).substring(2, 7)}`
       const chargeWork = `Position-${Math.random().toString(36).substring(2, 7)}`
       const enterprise = `Enterprise-${Math.random().toString(36).substring(2, 7)}`
-      const drink = Math.random() < 0.5 // 0 o 1 para bebida
+      const drink = Math.random() < 0.5 // true o false para bebida
       const educativeLevel = educationLevels[Math.floor(Math.random() * educationLevels.length)].id
       const personality = Math.random().toString(36).substring(2, 50)
       const idZodiac = zodiacs[Math.floor(Math.random() * zodiacs.length)].id
-      const mascotas = Math.random() < 0.5 // 0 o 1 para mascotas
+      const mascotas = Math.random() < 0.5 // true o false para mascotas
       const idReligion = religions[Math.floor(Math.random() * religions.length)].id
       const image = 'https://picsum.photos/200/300'
 
-      // Inserción de usuarios
+      // Inserción del usuario con el ID específico
       await pool.query(
-        'INSERT INTO `users`(`email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [email, phone, password, 1, gender, name, birthdate, idFind, orientation, idStatus, bio, height, studyPlace, youWork, chargeWork, enterprise, drink, educativeLevel, personality, idZodiac, mascotas, idReligion]
+        'INSERT INTO `users`(`id`, `email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          nextId,
+          email,
+          phone,
+          password,
+          1,
+          gender,
+          name,
+          birthdate,
+          idFind,
+          orientation,
+          idStatus,
+          bio,
+          height,
+          studyPlace,
+          youWork,
+          chargeWork,
+          enterprise,
+          drink,
+          educativeLevel,
+          personality,
+          idZodiac,
+          mascotas,
+          idReligion
+        ]
       )
-      const [user] = await pool.query('SELECT * FROM users WHERE email = ?', [email])
-      await pool.query('INSERT INTO user_image(user_id, image) VALUES (?, ?)', [user[0].id, image])
+
+      // Actualizar el AUTO_INCREMENT si es necesario
+      const [autoIncRows] = await pool.query('SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "users"')
+      const currentAutoIncrement = autoIncRows[0].AUTO_INCREMENT
+
+      if (nextId >= currentAutoIncrement) {
+        await pool.query('ALTER TABLE users AUTO_INCREMENT = ?', [nextId + 1])
+      }
+
+      // Insertar imagen del usuario
+      await pool.query('INSERT INTO user_image(user_id, image) VALUES (?, ?)', [nextId, image])
+
+      // Incrementar nextId para el siguiente usuario
+      nextId++
     }
+
+    // Confirmar la transacción
+    await pool.query('COMMIT')
 
     return res.status(200).json({
       message: `${numUsers} users created successfully`
     })
   } catch (error) {
+    // Revertir la transacción en caso de error
+    await pool.query('ROLLBACK')
     console.error('Error creating test users:', error)
     return res.status(500).json({
       message: 'Internal server error',
@@ -1476,18 +1619,45 @@ const createTestUser = async (req, res) => {
   }
 }
 
+const deleteForm = async (req, res) => {
+  try {
+    const { email, phone } = req.body
+    console.log(req.body)
+    const [user] = await pool.query('SELECT * FROM users WHERE email = ? AND phone = ?', [email, phone])
+
+    console.log(user)
+
+    if (user.length === 0) {
+      return res.status(404).json({
+        message: 'User not found'
+      })
+    }
+    await pool.query('INSERT INTO `delete_form`(`email`, `phone`) VALUES (?, ?)', [email, phone])
+    return res.status(200).json({
+      message: 'Form sent'
+    })
+  } catch (error) {
+    console.error('Error deleting form:', error)
+    return res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
 module.exports = {
+  list,
+  login,
+  update,
   register,
   activate,
-  login,
-  list,
-  loginByCode,
-  loginByCode2,
-  isPerfilCompleto,
-  update,
   getToken,
   getToLike,
   deleteUser,
+  deleteForm,
+  loginByCode,
   getMatchList,
-  createTestUser
+  loginByCode2,
+  createTestUser,
+  isPerfilCompleto
 }
