@@ -37,7 +37,7 @@ const getChat = async (req, res) => {
       return res.status(404).json({ message: 'Event chat not found' })
     }
 
-    const chatId = eventChatRows[0].ID
+    const chatId = eventChatRows[0].ID_chat
 
     // Fetch chat information
     const [chatInfoRows] = await pool.query('SELECT * FROM chat WHERE id = ?', [chatId])
@@ -96,12 +96,19 @@ const deleteEvent = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden' })
     }
     const { id } = req.params
-
+    await pool.query('DELETE FROM eventsImage WHERE eventId = ?', [id]);
     await pool.query('DELETE FROM participants WHERE id_event = ?', [id])
     await pool.query('DELETE FROM event_chat WHERE ID_event = ?', [id])
+    const [fotos] = await pool.query('SELECT * FROM events_fotos WHERE eventid = ?', [id]);
+    if (fotos.length > 0) {
+      await pool.query('DELETE FROM events_fotos WHERE eventId = ?', [id]);
+    }
+    await pool.query('DELETE FROM message WHERE id_chat = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id]);
+    await pool.query('DELETE FROM user_chat WHERE ID_Chat = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id]);
+    await pool.query('DELETE FROM chat WHERE id = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id]);
     await pool.query('DELETE FROM events WHERE id = ?', [id])
 
-    res.status(200).json({ message: 'Event updated' })
+    res.status(200).json({ message: 'Event deleted' })
   } catch (error) {
     res.status(500).json({
       message: 'Internal server error',
@@ -140,6 +147,10 @@ const createEvent = async (req, res) => {
     )
 
     if (eventResults.length === 0) {
+      console.log(name)
+      console.log(description)
+      console.log(date)
+      console.log(place)
       throw new Error('Failed to retrieve the newly created event')
     }
 
@@ -179,11 +190,77 @@ const createEvent = async (req, res) => {
   }
 }
 
+const newParticipants = async (req, res) => {
+  try {
+    const { eventId } = req.params
+
+    const token = req.headers['x-user-key']
+
+    const userId = knowTokenData(token).id
+    const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [userId])
+    const [events] = await pool.query('SELECT * FROM events WHERE id = ?', [eventId])
+    const [isApuntado] = await pool.query('SELECT * FROM participants WHERE id_user = ? AND id_event = ?', [userId, eventId])
+
+    if (user.length === 0) {
+      return res.status(404).json({
+        message: 'User not found',
+        status: 404
+      })
+    }
+
+    if (events.length === 0) {
+      return res.status(400).json({
+        message: 'El evento no existe',
+        status: 400
+      })
+    }
+
+    if (isApuntado.length > 0) {
+      return res.status(400).json({
+        message: 'El usuario ya ha sido',
+        status: 400
+      })
+    } else {
+      pool.query('INSERT INTO participants (ID_User, ID_event) VALUES (?, ?)', [userId, eventId])
+    }
+
+    const [chat] = await pool.query('SELECT * FROM event_chat WHERE ID_event = ?', [eventId])
+
+    await pool.query('INSERT INTO user_chat (ID_User, ID_Chat) VALUES (?, ?)', [userId, chat[0].ID_chat])
+
+    return res.status(200).json({
+      message: 'Apuntado correctamente',
+      status: 200
+    })
+  } catch (e) {
+    return res.status(500).json({
+      message: 'Internal server error',
+      error: e.message,
+      status: 500
+    })
+  }
+}
+
+const getOne = async (req, res) => {
+  try {
+    const { id } = req.params
+    const [rows] = await pool.query('SELECT * FROM events WHERE id = ?', [id])
+    res.status(200).json(rows)
+  } catch (error) {
+    res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
 module.exports = {
   getAll,
   getParticipants,
   getChat,
   updateEvent,
   deleteEvent,
-  createEvent
+  createEvent,
+  newParticipants,
+  getOne
 }
