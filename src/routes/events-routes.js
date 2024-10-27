@@ -11,6 +11,12 @@ router.get(
 )
 
 router.get(
+  '/:id',
+  verifyAPIKey,
+  eventsController.getOne
+)
+
+router.get(
   '/:id/participants',
   verifyAPIKey,
   eventsController.getParticipants
@@ -38,6 +44,12 @@ router.post(
   '/createEvent',
   verifyAPIKey,
   eventsController.createEvent
+)
+
+router.post(
+  '/newParticipants/:eventId',
+  verifyAPIKey,
+  eventsController.newParticipants
 )
 
 module.exports = router

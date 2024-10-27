@@ -89,4 +89,10 @@ router.post(
   userController.deleteForm
 )
 
+router.post(
+  '/delete/photo',
+  verifyAPIKey,
+  userController.deletePhoto
+)
+
 module.exports = router
