@@ -1054,12 +1054,18 @@ const login = async (req, res) => {
 
 const list = async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      'SELECT users.*, genre.genre_name, role.name AS roleName, find.text AS findText, sexualidad.text AS orientationText, `estado-civil`.text AS statusText FROM users JOIN genre ON users.id_genre = genre.id LEFT JOIN users_role ON users.id = users_role.user_id LEFT JOIN role ON users_role.role_id = role.id LEFT JOIN find ON users.id_find = find.id LEFT JOIN sexualidad ON users.id_orientation = sexualidad.id LEFT JOIN `estado-civil` ON users.id_status = `estado-civil`.id;')
-
-    rows.forEach(element => {
+    const [rows] = await pool.query('SELECT users.*, genre.genre_name, role.name AS roleName, find.text AS findText, sexualidad.text AS orientationText, `estado-civil`.text AS statusText FROM users JOIN genre ON users.id_genre = genre.id LEFT JOIN users_role ON users.id = users_role.user_id LEFT JOIN role ON users_role.role_id = role.id LEFT JOIN find ON users.id_find = find.id LEFT JOIN sexualidad ON users.id_orientation = sexualidad.id LEFT JOIN `estado-civil` ON users.id_status = `estado-civil`.id;')
+    rows.forEach(async element => {
       delete element.passwd
       delete element.isActive
+
+      const detete = await pool.query('SELECT * FROM delete_form WHERE email = ? AND phone = ?', [element.email, element.phone])
+
+      if (detete.length > 0) {
+        element.deleted = true
+      } else {
+        element.deleted = false
+      }
 
       Object.keys(element).forEach(key => {
         if (element[key] === null) {
@@ -1506,13 +1512,13 @@ const createTestUser = async (req, res) => {
     await pool.query('START TRANSACTION')
 
     // Consulta a las tablas necesarias
-    const [genders] = await pool.query('SELECT * FROM genre FOR UPDATE')
-    const [findOptions] = await pool.query('SELECT * FROM find FOR UPDATE')
-    const [orientations] = await pool.query('SELECT * FROM sexualidad FOR UPDATE')
-    const [statuses] = await pool.query('SELECT * FROM `estado-civil` FOR UPDATE')
-    const [religions] = await pool.query('SELECT * FROM religion FOR UPDATE')
-    const [zodiacs] = await pool.query('SELECT * FROM zodiac FOR UPDATE')
-    const [educationLevels] = await pool.query('SELECT * FROM educative_level FOR UPDATE')
+    const [genders] = await pool.query('SELECT * FROM genre')
+    const [findOptions] = await pool.query('SELECT * FROM find')
+    const [orientations] = await pool.query('SELECT * FROM sexualidad')
+    const [statuses] = await pool.query('SELECT * FROM `estado_civil`')
+    const [religions] = await pool.query('SELECT * FROM religion')
+    const [zodiacs] = await pool.query('SELECT * FROM zodiac')
+    const [educationLevels] = await pool.query('SELECT * FROM educative_level')
 
     // Obtener todos los IDs existentes de la tabla users
     const [existingIdsRows] = await pool.query('SELECT id FROM users FOR UPDATE')
@@ -1645,6 +1651,36 @@ const deleteForm = async (req, res) => {
   }
 }
 
+const deletePhoto = async (req, res) => {
+  try {
+    const userToken = req.headers['user-token']
+    const photo = req.body.photo
+    const user = knowTokenData(userToken).data
+    const [user_] = await pool.query('SELECT * FROM users WHERE id = ?', [user.id])
+    if (user_.length === 0) {
+      return res.status(404).json({
+        message: 'User not found'
+      })
+    }
+    const [photoFromUser] = await pool.query('SELECT * FROM user_image WHERE user_id = ? AND image = ?', [user.id, photo])
+    if (photoFromUser.length === 0) {
+      return res.status(404).json({
+        message: 'Photo not found'
+      })
+    }
+    await pool.query('DELETE FROM user_image WHERE user_id = ? AND image = ?', [user.id, photo])
+    return res.status(200).json({
+      message: 'Photo deleted'
+    })
+  } catch (error) {
+    console.error('Error deleting photo:', error)
+    return res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
 module.exports = {
   list,
   login,
@@ -1656,6 +1692,7 @@ module.exports = {
   deleteUser,
   deleteForm,
   loginByCode,
+  deletePhoto,
   getMatchList,
   loginByCode2,
   createTestUser,
