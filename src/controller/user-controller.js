@@ -87,9 +87,9 @@ const register = async (req, res) => {
     const [userRows] = await pool.query('SELECT * FROM users WHERE id = ?', [nextId])
 
     const code = Math.floor(Math.random() * (999999 - 100000) + 100000)
-    await pool.query('INSERT INTO `users_activation`(`id_user`, `validationCode`) VALUES (?, ?)', [nextId, code])
+    await pool.query('INSERT INTO `users_activation`(id, `id_user`, `validationCode`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_activation`), ?, ?)', [nextId, code])
     await pool.query(
-      'INSERT INTO `users_role`(`user_id`, `role_id`) VALUES (?, (SELECT id FROM role WHERE NAME LIKE "user"))',
+      'INSERT INTO `users_role`(id, `user_id`, `role_id`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_role`), ?, (SELECT id FROM role WHERE NAME LIKE "user"))',
       [nextId]
     )
 
@@ -1054,18 +1054,10 @@ const login = async (req, res) => {
 
 const list = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT users.*, genre.genre_name, role.name AS roleName, find.text AS findText, sexualidad.text AS orientationText, `estado-civil`.text AS statusText FROM users JOIN genre ON users.id_genre = genre.id LEFT JOIN users_role ON users.id = users_role.user_id LEFT JOIN role ON users_role.role_id = role.id LEFT JOIN find ON users.id_find = find.id LEFT JOIN sexualidad ON users.id_orientation = sexualidad.id LEFT JOIN `estado-civil` ON users.id_status = `estado-civil`.id;')
+    const [rows] = await pool.query('SELECT users.*, genre.genre_name AS genre_name, role.name AS roleName, find.text AS findText, sexualidad.text AS orientationText, `estado-civil`.text AS statusText, CASE WHEN delete_form.email IS NOT NULL AND delete_form.phone IS NOT NULL THEN true ELSE false END AS deleted FROM users JOIN genre ON users.id_genre = genre.id LEFT JOIN users_role ON users.id = users_role.user_id LEFT JOIN role ON users_role.role_id = role.id LEFT JOIN find ON users.id_find = find.id LEFT JOIN sexualidad ON users.id_orientation = sexualidad.id LEFT JOIN `estado-civil` ON users.id_status = `estado-civil`.id LEFT JOIN delete_form ON users.email = delete_form.email AND users.phone = delete_form.phone;')
     rows.forEach(async element => {
       delete element.passwd
       delete element.isActive
-
-      const detete = await pool.query('SELECT * FROM delete_form WHERE email = ? AND phone = ?', [element.email, element.phone])
-
-      if (detete.length > 0) {
-        element.deleted = true
-      } else {
-        element.deleted = false
-      }
 
       Object.keys(element).forEach(key => {
         if (element[key] === null) {
@@ -1159,7 +1151,7 @@ const loginByCode = async (req, res) => {
       })
     }
     const code = Math.floor(Math.random() * (999999 - 100000) + 100000)
-    await pool.query('INSERT INTO `users_2fa`(`id_user`, `validationCode`) VALUES (?, ?)', [rows[0].id, code])
+    await pool.query('INSERT INTO `users_2fa`(id, `id_user`, `validationCode`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_2fa`), ?, ?)', [rows[0].id, code])
     // Mandar codigo por email
     const transporter = nodemailer.createTransport({
       host: 'smtp.ionos.es',
@@ -1303,7 +1295,7 @@ const update = async (req, res) => {
 
     if (req.body.photo) {
       await pool.query(
-        'INSERT INTO user_image(user_id, image) VALUES (?, ?)',
+        'INSERT INTO user_image(id, user_id, image) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `user_image`), ?, ?)',
         [id, req.body.photo]
       )
     }
@@ -1320,7 +1312,7 @@ const update = async (req, res) => {
       if (langIdsToInsert.length > 0) {
         for (const langId of langIdsToInsert) {
           await pool.query(
-            'INSERT INTO user_lang(user_id, lang_id) VALUES (?, ?)',
+            'INSERT INTO user_lang(id, user_id, lang_id) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `user_lang`), ?, ?)',
             [id, langId]
           )
         }
@@ -1508,33 +1500,19 @@ const createTestUser = async (req, res) => {
   try {
     const { numUsers } = req.params
 
-    // Iniciar una transacción
-    await pool.query('START TRANSACTION')
-
     // Consulta a las tablas necesarias
     const [genders] = await pool.query('SELECT * FROM genre')
     const [findOptions] = await pool.query('SELECT * FROM find')
     const [orientations] = await pool.query('SELECT * FROM sexualidad')
-    const [statuses] = await pool.query('SELECT * FROM `estado_civil`')
+    const [statuses] = await pool.query('SELECT * FROM `estado-civil`')
     const [religions] = await pool.query('SELECT * FROM religion')
     const [zodiacs] = await pool.query('SELECT * FROM zodiac')
     const [educationLevels] = await pool.query('SELECT * FROM educative_level')
 
-    // Obtener todos los IDs existentes de la tabla users
-    const [existingIdsRows] = await pool.query('SELECT id FROM users FOR UPDATE')
-    const existingIds = existingIdsRows.map(row => row.id)
-
-    let nextId = 1
-    const assignedIds = new Set()
+    // Iniciar una transacción
+    await pool.query('START TRANSACTION')
 
     for (let i = 0; i < numUsers; i++) {
-      // Encontrar el siguiente ID disponible
-      while (existingIds.includes(nextId) || assignedIds.has(nextId)) {
-        nextId++
-      }
-
-      assignedIds.add(nextId)
-
       // Datos aleatorios
       const gender = genders[Math.floor(Math.random() * genders.length)].id
       const name = `${Math.random().toString(36).substring(2, 7)}-test`
@@ -1562,12 +1540,15 @@ const createTestUser = async (req, res) => {
       const mascotas = Math.random() < 0.5 // true o false para mascotas
       const idReligion = religions[Math.floor(Math.random() * religions.length)].id
       const image = 'https://picsum.photos/200/300'
+      const [nextId] = await pool.query('SELECT MAX(id) FROM users')
+      console.log(nextId)
+      const id = nextId[0]['MAX(id)'] + 1
 
       // Inserción del usuario con el ID específico
       await pool.query(
-        'INSERT INTO `users`(`id`, `email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO `users`(id, `email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [
-          nextId,
+          id,
           email,
           phone,
           password,
@@ -1592,20 +1573,8 @@ const createTestUser = async (req, res) => {
           idReligion
         ]
       )
-
-      // Actualizar el AUTO_INCREMENT si es necesario
-      const [autoIncRows] = await pool.query('SELECT AUTO_INCREMENT FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = "users"')
-      const currentAutoIncrement = autoIncRows[0].AUTO_INCREMENT
-
-      if (nextId >= currentAutoIncrement) {
-        await pool.query('ALTER TABLE users AUTO_INCREMENT = ?', [nextId + 1])
-      }
-
       // Insertar imagen del usuario
-      await pool.query('INSERT INTO user_image(user_id, image) VALUES (?, ?)', [nextId, image])
-
-      // Incrementar nextId para el siguiente usuario
-      nextId++
+      await pool.query('INSERT INTO user_image(id, user_id, image) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `user_image`), ?, ?)', [id, image])
     }
 
     // Confirmar la transacción
@@ -1638,7 +1607,7 @@ const deleteForm = async (req, res) => {
         message: 'User not found'
       })
     }
-    await pool.query('INSERT INTO `delete_form`(`email`, `phone`) VALUES (?, ?)', [email, phone])
+    await pool.query('INSERT INTO `delete_form`(id, `email`, `phone`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `delete_form`), ?, ?)', [email, phone])
     return res.status(200).json({
       message: 'Form sent'
     })

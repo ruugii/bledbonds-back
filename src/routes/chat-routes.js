@@ -16,4 +16,10 @@ router.get(
   chatController.getChat
 )
 
+router.get(
+  '/all',
+  verifyAPIKey,
+  chatController.getAllAdmin
+)
+
 module.exports = router

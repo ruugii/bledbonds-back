@@ -6,13 +6,23 @@ const getAll = async (req, res) => {
     const user_token = req.headers['user-token']
     const data = knowTokenData(user_token)
     const userId = data.id
-    const [rows] = await pool.query('SELECT * FROM user_chat WHERE ID_user = ?', [userId])
-    const chats = []
-    for (const chat of rows) {
-      const [chat_] = await pool.query('SELECT chat.* FROM chat WHERE ID = ?', [chat.ID_chat])
-      chats.push(chat_[0])
+    const isWeb = req.headers.web ? true : false
+    let roles = []
+    if (isWeb) {
+      [roles] = await pool.query('SELECT * FROM users_role WHERE user_id = ? AND role_id = (SELECT id FROM role WHERE name = "admin")', [userId])
     }
-    res.status(200).json(chats)
+    if (roles.length === 0) {
+      const [rows] = await pool.query('SELECT * FROM user_chat WHERE ID_user = ?', [userId])
+      const chats = []
+      for (const chat of rows) {
+        const [chat_] = await pool.query('SELECT chat.* FROM chat WHERE ID = ?', [chat.ID_chat])
+        chats.push(chat_[0])
+      }
+      res.status(200).json(chats)
+    } else {
+      const [chats] = await pool.query('SELECT * FROM chat;')
+      res.status(200).json(chats)
+    }
   } catch (error) {
     res.status(500).json({
       message: 'Internal server error',
@@ -138,7 +148,7 @@ const createEvent = async (req, res) => {
 
     // Insert event
     await pool.query(
-      'INSERT INTO events (event_name, event_description, event_date, event_location) VALUES (?, ?, ?, ?)',
+      'INSERT INTO events (id, event_name, event_description, event_date, event_location) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `events`), ?, ?, ?, ?)',
       [name, description, date, place]
     )
 
@@ -155,11 +165,11 @@ const createEvent = async (req, res) => {
     const eventId = eventResults[0].id
 
     await pool.query(
-      'INSERT INTO eventsImage (eventId, eventImageURL) VALUES (?, ?)',
+      'INSERT INTO eventsImage (id, eventId, eventImageURL) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `eventsImage`), ?, ?)',
       [eventId, url.url]
     )
     // Insert chat
-    await pool.query('INSERT INTO chat (name) VALUES (?)', [name])
+    await pool.query('INSERT INTO chat (ID, name) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `chat`), ?)', [name])
 
     // Retrieve the newly inserted chat
     const [chatResults] = await pool.query('SELECT * FROM chat WHERE name = ?', [name])
@@ -171,7 +181,7 @@ const createEvent = async (req, res) => {
     const chatId = chatResults[0].ID
 
     // Insert event_chat
-    await pool.query('INSERT INTO event_chat (ID_event, ID_chat) VALUES (?, ?)', [eventId, chatId])
+    await pool.query('INSERT INTO event_chat (ID, ID_event, ID_chat) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `event_chat`), ?, ?)', [eventId, chatId])
 
     // Commit the transaction
     await pool.query('COMMIT')
@@ -188,11 +198,24 @@ const createEvent = async (req, res) => {
   }
 }
 
+const getAllAdmin = async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT * FROM chat;')
+    res.status(200).json(rows)
+  } catch (error) {
+    res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
 module.exports = {
   getAll,
   getParticipants,
   getChat,
   updateEvent,
   deleteEvent,
-  createEvent
+  createEvent,
+  getAllAdmin
 }

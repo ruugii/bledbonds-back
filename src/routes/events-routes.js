@@ -7,7 +7,19 @@ const router = Router()
 router.get(
   '/',
   verifyAPIKey,
+  eventsController.getAllFuture
+)
+
+router.get(
+  '/all',
+  verifyAPIKey,
   eventsController.getAll
+)
+
+router.get(
+  '/past',
+  verifyAPIKey,
+  eventsController.getPast
 )
 
 router.get(

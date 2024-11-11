@@ -1,7 +1,7 @@
 const pool = require('../db/db')
 const { knowTokenData } = require('../functions/knowTokenData')
 
-const getAll = async (req, res) => {
+const getAllFuture = async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT events.*, eventsImage.eventImageURL FROM events LEFT JOIN eventsImage ON events.id = eventsImage.eventId WHERE events.event_date >= CURDATE();')
     res.status(200).json(rows)
@@ -99,9 +99,9 @@ const deleteEvent = async (req, res) => {
     await pool.query('DELETE FROM eventsImage WHERE eventId = ?', [id]);
     await pool.query('DELETE FROM participants WHERE id_event = ?', [id])
     await pool.query('DELETE FROM event_chat WHERE ID_event = ?', [id])
-    const [fotos] = await pool.query('SELECT * FROM events_fotos WHERE eventid = ?', [id]);
+    const [fotos] = await pool.query('SELECT * FROM events_fotos WHERE event_id = ?', [id]);
     if (fotos.length > 0) {
-      await pool.query('DELETE FROM events_fotos WHERE eventId = ?', [id]);
+      await pool.query('DELETE FROM events_fotos WHERE event_id = ?', [id]);
     }
     await pool.query('DELETE FROM message WHERE id_chat = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id]);
     await pool.query('DELETE FROM user_chat WHERE ID_Chat = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id]);
@@ -136,7 +136,7 @@ const createEvent = async (req, res) => {
 
     // Insert event
     await pool.query(
-      'INSERT INTO events (event_name, event_description, event_date, event_location) VALUES (?, ?, ?, ?)',
+      'INSERT INTO events (id, event_name, event_description, event_date, event_location) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `events`), ?, ?, ?, ?)',
       [name, description, date, place]
     )
 
@@ -157,11 +157,11 @@ const createEvent = async (req, res) => {
     const eventId = eventResults[0].id
 
     await pool.query(
-      'INSERT INTO eventsImage (eventId, eventImageURL) VALUES (?, ?)',
+      'INSERT INTO eventsImage (id, eventId, eventImageURL) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `eventsImage`), ?, ?)',
       [eventId, url.url]
     )
     // Insert chat
-    await pool.query('INSERT INTO chat (name) VALUES (?)', [name])
+    await pool.query('INSERT INTO chat (ID, name) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `chat`), ?)', [name])
 
     // Retrieve the newly inserted chat
     const [chatResults] = await pool.query('SELECT * FROM chat WHERE name = ?', [name])
@@ -173,7 +173,7 @@ const createEvent = async (req, res) => {
     const chatId = chatResults[0].ID
 
     // Insert event_chat
-    await pool.query('INSERT INTO event_chat (ID_event, ID_chat) VALUES (?, ?)', [eventId, chatId])
+    await pool.query('INSERT INTO event_chat (ID, ID_event, ID_chat) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `event_chat`), ?, ?)', [eventId, chatId])
 
     // Commit the transaction
     await pool.query('COMMIT')
@@ -221,12 +221,12 @@ const newParticipants = async (req, res) => {
         status: 400
       })
     } else {
-      pool.query('INSERT INTO participants (ID_User, ID_event) VALUES (?, ?)', [userId, eventId])
+      pool.query('INSERT INTO participants (id_participant, id_event) VALUES ((SELECT COALESCE(MAX(id_participant) + 1, 1) AS next_id FROM `participants`), ?)', [userId, eventId])
     }
 
     const [chat] = await pool.query('SELECT * FROM event_chat WHERE ID_event = ?', [eventId])
 
-    await pool.query('INSERT INTO user_chat (ID_User, ID_Chat) VALUES (?, ?)', [userId, chat[0].ID_chat])
+    await pool.query('INSERT INTO user_chat (ID, ID_user, ID_Chat) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `user_chat`), ?, ?)', [userId, chat[0].ID_chat])
 
     return res.status(200).json({
       message: 'Apuntado correctamente',
@@ -254,13 +254,39 @@ const getOne = async (req, res) => {
   }
 }
 
+const getAll = async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT events.*, eventsImage.eventImageURL FROM events LEFT JOIN eventsImage ON events.id = eventsImage.eventId;')
+    res.status(200).json(rows)
+  } catch (error) {
+    res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
+const getPast = async (req, res) => {
+  try {
+    const [rows] = await pool.query('SELECT events.*, eventsImage.eventImageURL FROM events LEFT JOIN eventsImage ON events.id = eventsImage.eventId WHERE CURDATE() >= events.event_date;')
+    res.status(200).json(rows)
+  } catch (error) {
+    res.status(500).json({
+      message: 'Internal server error',
+      error
+    })
+  }
+}
+
 module.exports = {
+  getOne,
   getAll,
-  getParticipants,
   getChat,
+  getPast,
   updateEvent,
   deleteEvent,
   createEvent,
+  getAllFuture,
+  getParticipants,
   newParticipants,
-  getOne
 }
