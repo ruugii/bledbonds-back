@@ -87,11 +87,12 @@ const register = async (req, res) => {
     const [userRows] = await pool.query('SELECT * FROM users WHERE id = ?', [nextId])
 
     const code = Math.floor(Math.random() * (999999 - 100000) + 100000)
-    await pool.query('INSERT INTO `users_activation`(id, `id_user`, `validationCode`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_activation`), ?, ?)', [nextId, code])
-    await pool.query(
-      'INSERT INTO `users_role`(id, `user_id`, `role_id`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_role`), ?, (SELECT id FROM role WHERE NAME LIKE "user"))',
-      [nextId]
-    )
+    let nextUserActivationId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_activation`')
+    nextUserActivationId = nextUserActivationId[0].next_id
+    await pool.query('INSERT INTO `users_activation`(id, `id_user`, `validationCode`) VALUES (?, ?, ?)', [nextUserActivationId, nextId, code])
+    let nextUserRoleId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_role`')
+    nextUserRoleId = nextUserRoleId[0].next_id
+    await pool.query('INSERT INTO `users_role`(id, `user_id`, `role_id`) VALUES (?, ?, (SELECT id FROM role WHERE NAME LIKE "user"))', [nextUserRoleId, nextId])
 
     // Configuración y envío del correo electrónico
     nodemailer.createTestAccount((err, account) => {
@@ -1151,7 +1152,9 @@ const loginByCode = async (req, res) => {
       })
     }
     const code = Math.floor(Math.random() * (999999 - 100000) + 100000)
-    await pool.query('INSERT INTO `users_2fa`(id, `id_user`, `validationCode`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_2fa`), ?, ?)', [rows[0].id, code])
+    let nextUser2faId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_2fa`')
+    nextUser2faId = nextUser2faId[0].next_id
+    await pool.query('INSERT INTO `users_2fa`(id, `id_user`, `validationCode`) VALUES (?, ?, ?)', [nextUser2faId, rows[0].id, code])
     // Mandar codigo por email
     const transporter = nodemailer.createTransport({
       host: 'smtp.ionos.es',
@@ -1294,10 +1297,9 @@ const update = async (req, res) => {
     }
 
     if (req.body.photo) {
-      await pool.query(
-        'INSERT INTO user_image(id, user_id, image) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `user_image`), ?, ?)',
-        [id, req.body.photo]
-      )
+      let nextUserImageId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `user_image`')
+      nextUserImageId = nextUserImageId[0].next_id
+      await pool.query('INSERT INTO user_image(id, user_id, image) VALUES (?, ?, ?)', [nextUserImageId, id, req.body.photo])
     }
 
     if (req.body.language) {
@@ -1311,10 +1313,9 @@ const update = async (req, res) => {
 
       if (langIdsToInsert.length > 0) {
         for (const langId of langIdsToInsert) {
-          await pool.query(
-            'INSERT INTO user_lang(id, user_id, lang_id) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `user_lang`), ?, ?)',
-            [id, langId]
-          )
+          let nextUserLangId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `user_lang`')
+          nextUserLangId = nextUserLangId[0].next_id
+          await pool.query('INSERT INTO user_lang(id, user_id, lang_id) VALUES (?, ?, ?)', [nextUserLangId, id, langId])
         }
       }
 
@@ -1574,7 +1575,9 @@ const createTestUser = async (req, res) => {
         ]
       )
       // Insertar imagen del usuario
-      await pool.query('INSERT INTO user_image(id, user_id, image) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `user_image`), ?, ?)', [id, image])
+      let nextUserImageId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `user_image`')
+      nextUserImageId = nextUserImageId[0].next_id
+      await pool.query('INSERT INTO user_image(id, user_id, image) VALUES (?, ?, ?)', [nextUserImageId, id, image])
     }
 
     // Confirmar la transacción
@@ -1607,7 +1610,9 @@ const deleteForm = async (req, res) => {
         message: 'User not found'
       })
     }
-    await pool.query('INSERT INTO `delete_form`(id, `email`, `phone`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `delete_form`), ?, ?)', [email, phone])
+    let nextDeleteFormId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `delete_form`')
+    nextDeleteFormId = nextDeleteFormId[0].next_id
+    await pool.query('INSERT INTO `delete_form`(id, `email`, `phone`) VALUES (?, ?, ?)', [nextDeleteFormId, email, phone])
     return res.status(200).json({
       message: 'Form sent'
     })

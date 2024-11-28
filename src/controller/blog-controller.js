@@ -42,7 +42,9 @@ const create = async (req, res) => {
     }
     const tokenDecoded = knowTokenData(token)
     const [idCategory] = await pool.query('SELECT id FROM category WHERE name = ?', [category])
-    const [rows] = await pool.query('INSERT INTO blog (id, title, resume, content, id_category, created_by) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `blog`), ?, ?, ?, ?, ?)', [title, resume, text, idCategory[0].id, tokenDecoded.id])
+    let [nextId] = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `blog`')
+    nextId = nextId[0].next_id
+    const [rows] = await pool.query('INSERT INTO blog (id, title, resume, content, id_category, created_by) VALUES (?, ?, ?, ?, ?, ?)', [nextId, title, resume, text, idCategory[0].id, tokenDecoded.id])
     if (rows) {
       res.status(201).json({
         message: 'Blog created successfully'

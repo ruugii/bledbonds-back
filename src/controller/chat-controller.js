@@ -146,10 +146,12 @@ const createEvent = async (req, res) => {
     // Start a transaction
     await pool.query('START TRANSACTION')
 
+    let [nextId] = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `events`')
+    nextId = nextId[0].next_id
     // Insert event
     await pool.query(
-      'INSERT INTO events (id, event_name, event_description, event_date, event_location) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `events`), ?, ?, ?, ?)',
-      [name, description, date, place]
+      'INSERT INTO events (id, event_name, event_description, event_date, event_location) VALUES (?, ?, ?, ?, ?)',
+      [nextId, name, description, date, place]
     )
 
     // Retrieve the newly inserted event
@@ -164,12 +166,17 @@ const createEvent = async (req, res) => {
 
     const eventId = eventResults[0].id
 
+    let [eventsImageId] = await pool.query('SELECT id FROM events WHERE id = ?', [nextId]) 
+    eventsImageId = eventsImageId[0].id
     await pool.query(
-      'INSERT INTO eventsImage (id, eventId, eventImageURL) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `eventsImage`), ?, ?)',
-      [eventId, url.url]
+      'INSERT INTO eventsImage (id, eventId, eventImageURL) VALUES (?, ?, ?)',
+      [eventsImageId, eventId, url.url]
     )
+
+    let [chatNextId] = await pool.query('SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `chat`')
+    chatNextId = chatNextId[0].next_id
     // Insert chat
-    await pool.query('INSERT INTO chat (ID, name) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `chat`), ?)', [name])
+    await pool.query('INSERT INTO chat (ID, name) VALUES (?, ?)', [chatNextId, name])
 
     // Retrieve the newly inserted chat
     const [chatResults] = await pool.query('SELECT * FROM chat WHERE name = ?', [name])
@@ -181,7 +188,9 @@ const createEvent = async (req, res) => {
     const chatId = chatResults[0].ID
 
     // Insert event_chat
-    await pool.query('INSERT INTO event_chat (ID, ID_event, ID_chat) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `event_chat`), ?, ?)', [eventId, chatId])
+    let [eventChatNextId] = await pool.query('SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `event_chat`')
+    eventChatNextId = eventChatNextId[0].next_id
+    await pool.query('INSERT INTO event_chat (ID, ID_event, ID_chat) VALUES (?, ?, ?)', [eventChatNextId, eventId, chatId])
 
     // Commit the transaction
     await pool.query('COMMIT')

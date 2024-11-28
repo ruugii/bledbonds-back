@@ -5,10 +5,14 @@ const nodemailer = require('nodemailer')
 
 const register = async (req, res) => {
   try {
-    await pool.query('INSERT INTO `users`(id, `email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users`), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [req.body.email, req.body.phone, await hashPassword(req.body.password), 0, await getIdGenre(req.body.genre), req.body.name, req.body.birthDate, req.body.idFind, req.body.idOrientation, req.body.idStatus, req.body.bio, req.body.height, req.body.studyPlace, req.body.youWork, req.body.chargeWork, req.body.enterprise, req.body.drink, req.body.educativeLevel, req.body.personality, req.body.idZodiac, req.body.mascotas, req.body.idReligion])
+    let nextUserId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users`')
+    nextUserId = nextUserId[0].next_id
+    await pool.query('INSERT INTO `users`(id, `email`, `phone`, `passwd`, `isActive`, `id_genre`, `name`, `birthdate`, `id_find`, `id_orientation`, `id_status`, `bio`, `height`, `studyPlace`, `you_work`, `charge_work`, `enterprise`, `drink`, `educative_level_id`, `personality`, `id_zodiac`, `mascotas`, `id_religion`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [nextUserId, req.body.email, req.body.phone, await hashPassword(req.body.password), 0, await getIdGenre(req.body.genre), req.body.name, req.body.birthDate, req.body.idFind, req.body.idOrientation, req.body.idStatus, req.body.bio, req.body.height, req.body.studyPlace, req.body.youWork, req.body.chargeWork, req.body.enterprise, req.body.drink, req.body.educativeLevel, req.body.personality, req.body.idZodiac, req.body.mascotas, req.body.idReligion])
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [req.body.email])
     const code = Math.floor(Math.random() * (999999 - 100000) + 100000)
-    await pool.query('INSERT INTO `users_activation`(id, `id_user`, `validationCode`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_activation`), ?, ?)', [rows[0].id, code])
+    let nextUserActivationId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_activation`')
+    nextUserActivationId = nextUserActivationId[0].next_id
+    await pool.query('INSERT INTO `users_activation`(id, `id_user`, `validationCode`) VALUES (?, ?, ?)', [nextUserActivationId, rows[0].id, code])
     nodemailer.createTestAccount((err, account) => {
       if (err) {
         return res.status(500).json({
@@ -1306,7 +1310,9 @@ const activate = async (req, res) => {
 const create = async (req, res) => {
   try {
     const token = getRandomToken()
-    await pool.query('INSERT INTO `newsletter`(id, `email`, `token`) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `newsletter`), ?, ?)', [req.body.email, token])
+    let nextNewsletterId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `newsletter`')
+    nextNewsletterId = nextNewsletterId[0].next_id
+    await pool.query('INSERT INTO `newsletter`(id, `email`, `token`) VALUES (?, ?, ?)', [nextNewsletterId, req.body.email, token])
     nodemailer.createTestAccount((err, account) => {
       if (err) {
         return res.status(500).json({

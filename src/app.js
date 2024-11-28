@@ -25,7 +25,9 @@ app.use(multer({
 io.on('connection', (socket) => {
   socket.on('chat message', async (msg) => {
     const userID = knowTokenData(msg.token).id
-    pool.query('INSERT INTO message (ID_message, ID_User, ID_Chat, Message) VALUES ((SELECT COALESCE(MAX(ID_message) + 1, 1) AS next_id FROM message), ?, ?, ?)', [userID, msg.chatId, msg.message])
+    let [nexId] = await pool.query('SELECT COALESCE(MAX(ID_message) + 1, 1) AS next_id FROM message')
+    nexId = nexId[0].next_id
+    pool.query('INSERT INTO message (ID_message, ID_User, ID_Chat, Message) VALUES (?, ?, ?, ?)', [nexId, userID, msg.chatId, msg.message])
     io.emit(`chat message ${msg.chatId}`, msg)
   })
 })

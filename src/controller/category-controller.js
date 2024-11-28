@@ -16,7 +16,9 @@ const getAll = async (req, res) => {
 const create = async (req, res) => {
   try {
     const { name } = req.body
-    await pool.query('INSERT INTO category (id, name) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `category`), ?)', [name])
+    let [nextId] = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `category`')
+    nextId = nextId[0].next_id
+    await pool.query('INSERT INTO category (id, name) VALUES (?, ?)', [nextId, name])
     res.status(201).json({
       message: 'Category created successfully',
       category: { name }

@@ -5,7 +5,9 @@ const like = async (req, res) => {
   try {
     const id = knowTokenData(req.headers['user-token']).id
     const { idUser, action } = req.body
-    await pool.query('INSERT INTO actions (id, id_user, id_action, id_liked) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `actions`), ?, ?, ?)', [id, action, idUser])
+    let [nextId] = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `actions`')
+    nextId = nextId[0].next_id
+    await pool.query('INSERT INTO actions (id, id_user, id_action, id_liked) VALUES (?, ?, ?, ?)', [nextId, id, action, idUser])
     const [IsMatch] = await pool.query('SELECT * FROM actions WHERE id_user = ? AND id_action = ? AND id_liked = ?', [idUser, '1', id])
     const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [idUser])
     const [user2] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
@@ -47,7 +49,9 @@ const dislike = async (req, res) => {
   try {
     const id = knowTokenData(req.headers['user-token']).id
     const { idUser, action } = req.body
-    await pool.query('INSERT INTO actions (id, id_user, id_action, id_liked) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `actions`), ?, ?, ?)', [id, action, idUser])
+    let [nextId] = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `actions`')
+    nextId = nextId[0].next_id
+    await pool.query('INSERT INTO actions (id, id_user, id_action, id_liked) VALUES (?, ?, ?, ?)', [nextId, id, action, idUser])
     return res.status(200).json({
       message: 'Dislike created successfully',
       IsMatch: false

@@ -96,16 +96,16 @@ const deleteEvent = async (req, res) => {
       return res.status(403).json({ message: 'Forbidden' })
     }
     const { id } = req.params
-    await pool.query('DELETE FROM eventsImage WHERE eventId = ?', [id]);
+    await pool.query('DELETE FROM eventsImage WHERE eventId = ?', [id])
     await pool.query('DELETE FROM participants WHERE id_event = ?', [id])
     await pool.query('DELETE FROM event_chat WHERE ID_event = ?', [id])
-    const [fotos] = await pool.query('SELECT * FROM events_fotos WHERE event_id = ?', [id]);
+    const [fotos] = await pool.query('SELECT * FROM events_fotos WHERE event_id = ?', [id])
     if (fotos.length > 0) {
-      await pool.query('DELETE FROM events_fotos WHERE event_id = ?', [id]);
+      await pool.query('DELETE FROM events_fotos WHERE event_id = ?', [id])
     }
-    await pool.query('DELETE FROM message WHERE id_chat = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id]);
-    await pool.query('DELETE FROM user_chat WHERE ID_Chat = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id]);
-    await pool.query('DELETE FROM chat WHERE id = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id]);
+    await pool.query('DELETE FROM message WHERE id_chat = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id])
+    await pool.query('DELETE FROM user_chat WHERE ID_Chat = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id])
+    await pool.query('DELETE FROM chat WHERE id = (SELECT ID_chat FROM event_chat WHERE ID_event = ?)', [id])
     await pool.query('DELETE FROM events WHERE id = ?', [id])
 
     res.status(200).json({ message: 'Event deleted' })
@@ -133,11 +133,14 @@ const createEvent = async (req, res) => {
 
     // Start a transaction
     await pool.query('START TRANSACTION')
-
     // Insert event
+    let [rows] = await pool.query(
+      'SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `events`'
+    )
+    let nextId = rows[0].next_id
     await pool.query(
-      'INSERT INTO events (id, event_name, event_description, event_date, event_location) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `events`), ?, ?, ?, ?)',
-      [name, description, date, place]
+      'INSERT INTO events (id, event_name, event_description, event_date, event_location) VALUES (?, ?, ?, ?, ?)',
+      [nextId, name, description, date, place]
     )
 
     // Retrieve the newly inserted event
@@ -155,13 +158,24 @@ const createEvent = async (req, res) => {
     }
 
     const eventId = eventResults[0].id
+    rows = await pool.query(
+      'SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `eventsImage`'
+    )
+
+    rows = [rows]
+
+    nextId = rows[0].next_id
 
     await pool.query(
-      'INSERT INTO eventsImage (id, eventId, eventImageURL) VALUES ((SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `eventsImage`), ?, ?)',
-      [eventId, url.url]
-    )
+      'INSERT INTO eventsImage (id, eventId, eventImageURL) VALUES (?, ?, ?)',
+      [nextId, eventId, url.url]
+    );
+
     // Insert chat
-    await pool.query('INSERT INTO chat (ID, name) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `chat`), ?)', [name])
+    [rows] = await pool.query(
+      'SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `chat`'
+    )
+    await pool.query('INSERT INTO chat (ID, name) VALUES (?, ?)', [rows[0].next_id, name])
 
     // Retrieve the newly inserted chat
     const [chatResults] = await pool.query('SELECT * FROM chat WHERE name = ?', [name])
@@ -173,7 +187,11 @@ const createEvent = async (req, res) => {
     const chatId = chatResults[0].ID
 
     // Insert event_chat
-    await pool.query('INSERT INTO event_chat (ID, ID_event, ID_chat) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `event_chat`), ?, ?)', [eventId, chatId])
+    rows = [await pool.query(
+      'SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `event_chat`'
+    )]
+
+    await pool.query('INSERT INTO event_chat (ID, ID_event, ID_chat) VALUES (?, ?, ?)', [rows[0].next_id, eventId, chatId])
 
     // Commit the transaction
     await pool.query('COMMIT')
@@ -221,12 +239,18 @@ const newParticipants = async (req, res) => {
         status: 400
       })
     } else {
-      pool.query('INSERT INTO participants (id_participant, id_event) VALUES ((SELECT COALESCE(MAX(id_participant) + 1, 1) AS next_id FROM `participants`), ?)', [userId, eventId])
+      const [rows] = await pool.query(
+        'SELECT COALESCE(MAX(id_participant) + 1, 1) AS next_id FROM `participants`'
+      )
+      pool.query('INSERT INTO participants (id_participant, id_event, id_user) VALUES (?, ?, ?)', [rows[0].next_id, eventId, userId])
     }
 
     const [chat] = await pool.query('SELECT * FROM event_chat WHERE ID_event = ?', [eventId])
 
-    await pool.query('INSERT INTO user_chat (ID, ID_user, ID_Chat) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `user_chat`), ?, ?)', [userId, chat[0].ID_chat])
+    const [rows] = await pool.query(
+      'SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `user_chat`'
+    )
+    await pool.query('INSERT INTO user_chat (ID, ID_user, ID_Chat) VALUES (?, ?, ?)', [rows[0].next_id, userId, chat[0].ID_chat])
 
     return res.status(200).json({
       message: 'Apuntado correctamente',
@@ -288,5 +312,5 @@ module.exports = {
   createEvent,
   getAllFuture,
   getParticipants,
-  newParticipants,
+  newParticipants
 }

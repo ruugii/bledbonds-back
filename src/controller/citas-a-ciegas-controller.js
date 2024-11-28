@@ -18,7 +18,10 @@ const create = async (req, res) => {
       idRandom = users[userRandom].ID_User
     } while (idRandom === idUser)
 
-    await pool.query('INSERT INTO chat (ID, name) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `chat`), ?)', [`Cita a ciega ${idUser} con ${idRandom}`])
+    let [nextChatId] = await pool.query('SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `chat`')
+    nextChatId = nextChatId[0].next_id
+    // Insert chat
+    await pool.query('INSERT INTO chat (ID, name) VALUES (?, ?)', [nextChatId, `Cita a ciega ${idUser} con ${idRandom}`])
     const [chatRows] = await pool.query('SELECT * FROM chat WHERE name = ?', [`Cita a ciega ${idUser} con ${idRandom}`])
 
     if (chatRows.length === 0) {
@@ -27,8 +30,12 @@ const create = async (req, res) => {
 
     const chatId = chatRows[0].ID
 
-    await pool.query('INSERT INTO user_chat (ID, ID_user, ID_chat) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `user_chat`), ?, ?)', [idUser, chatId])
-    await pool.query('INSERT INTO user_chat (ID, ID_user, ID_chat) VALUES ((SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `user_chat`), ?, ?)', [idRandom, chatId])
+    let [nextApuntadoId] = await pool.query('SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `user_chat`')
+    nextApuntadoId = nextApuntadoId[0].next_id
+    await pool.query('INSERT INTO user_chat (ID, ID_user, ID_chat) VALUES (?, ?, ?)', [nextApuntadoId, idUser, chatId])
+    let [nextUserChatId] = await pool.query('SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `user_chat`')
+    nextUserChatId = nextUserChatId[0].next_id
+    await pool.query('INSERT INTO user_chat (ID, ID_user, ID_chat) VALUES (?, ?, ?)', [nextUserChatId, idRandom, chatId])
 
     return res.status(200).json({
       message: 'Se ha creado la cita a ciegas con éxito'
