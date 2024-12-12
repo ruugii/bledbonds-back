@@ -1,4 +1,5 @@
 const pool = require("../db/db")
+const createLog = require("../functions/createLog")
 
 const create = async (req, res) => {
   try {
@@ -21,6 +22,7 @@ const create = async (req, res) => {
 
     await pool.query('INSERT INTO beta (email) VALUES (?)', [email])
     const [rows] = await pool.query('SELECT * FROM beta WHERE email = ?', [email])
+    createLog(0, 'create', `Creación de beta de ${email}`)
     if (rows.length > 0) {
       res.status(201).json({
         message: 'Beta created successfully'
@@ -31,6 +33,7 @@ const create = async (req, res) => {
       })
     }
   } catch (error) {
+    createLog('', 'create', error)
     res.status(500).json({
       message: 'Internal server error',
       error
@@ -41,8 +44,10 @@ const create = async (req, res) => {
 const getAll = async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM beta')
+    createLog(0, 'getAll', `Listado de betas`)
     res.status(200).json(rows)
   } catch (error) {
+    createLog('', 'getAll', error)
     res.status(500).json({
       message: 'Internal server error',
       error
