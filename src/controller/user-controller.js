@@ -3,6 +3,7 @@ const pool = require('../db/db')
 const { createToken } = require('../functions/createToken')
 const { hashPassword, verifyPassword } = require('../functions/hashPassword')
 const nodemailer = require('nodemailer')
+const createLog = require('../functions/createLog')
 
 const register = async (req, res) => {
   try {
@@ -94,6 +95,8 @@ const register = async (req, res) => {
     nextUserRoleId = nextUserRoleId[0].next_id
     await pool.query('INSERT INTO `users_role`(id, `user_id`, `role_id`) VALUES (?, ?, (SELECT id FROM role WHERE NAME LIKE "user"))', [nextUserRoleId, nextId])
 
+    createLog(nextId, 'register', 'Registro de usuario')
+
     // Configuración y envío del correo electrónico
     nodemailer.createTestAccount((err, account) => {
       if (err) {
@@ -137,6 +140,7 @@ const register = async (req, res) => {
   } catch (error) {
     // Revertir la transacción en caso de error
     await pool.query('ROLLBACK')
+    createLog('', 'register', error)
     return res.status(500).json({
       message: 'Error interno del servidor',
       path: 'src/controller/user-controller.js',
@@ -994,10 +998,12 @@ const activate = async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM users_activation WHERE validationCode = ?', [req.params.validateCode])
     await pool.query('UPDATE users SET isActive = 1 WHERE id = ?', [rows[0].id_user])
     await pool.query('DELETE FROM users_activation WHERE validationCode = ?', [req.params.validateCode])
+    createLog(rows[0].id_user, 'activate', 'Activación de usuario')
     return res.status(200).json({
       message: 'User activated successfully'
     })
   } catch (error) {
+    createLog('', 'activate', error)
     res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/user-controller.js',
@@ -1032,6 +1038,7 @@ const login = async (req, res) => {
       })
       const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [rows[0].id])
       const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null && imageRows.length > 0
+      createLog(rows[0].id, 'login', `Login de usuario ${rows[0].email}`)
       return res.status(200).json({
         message: 'User logged in successfully',
         token,
@@ -1046,6 +1053,7 @@ const login = async (req, res) => {
       })
     }
   } catch (error) {
+    createLog('', 'login', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1126,11 +1134,12 @@ const list = async (req, res) => {
     }
 
     const reorderedRows = rows.map(reorderKeys)
-
+    createLog('', 'list', `Listado de usuarios`)
     return res.status(200).json({
       users: reorderedRows
     })
   } catch (error) {
+    createLog('', 'list', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1155,6 +1164,7 @@ const loginByCode = async (req, res) => {
     let nextUser2faId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_2fa`')
     nextUser2faId = nextUser2faId[0].next_id
     await pool.query('INSERT INTO `users_2fa`(id, `id_user`, `validationCode`) VALUES (?, ?, ?)', [nextUser2faId, rows[0].id, code])
+    createLog(rows[0].id, 'loginByCode', `Login por código de verificación de ${rows[0].email}`)
     // Mandar codigo por email
     const transporter = nodemailer.createTransport({
       host: 'smtp.ionos.es',
@@ -1187,6 +1197,7 @@ const loginByCode = async (req, res) => {
       }
     })
   } catch (error) {
+    createLog('', 'loginByCode', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1220,6 +1231,7 @@ const loginByCode2 = async (req, res) => {
         data: rows[0]
       })
       const [role_] = await pool.query('SELECT name FROM role WHERE id = (SELECT role_id FROM users_role WHERE user_id = ?)', [rows[0].id])
+      createLog(rows[0].id, 'loginByCode2', `Login por código de verificación de ${rows[0].email}`)
       return res.status(200).json({
         message: 'User logged in successfully',
         token,
@@ -1227,6 +1239,7 @@ const loginByCode2 = async (req, res) => {
       })
     }
   } catch (error) {
+    createLog('', 'loginByCode2', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1251,11 +1264,13 @@ const isPerfilCompleto = async (req, res) => {
     }
     const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [id])
     const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null && imageRows.length > 0
+    createLog(id, 'isPerfilCompleto', `Verificación de perfil completo de usuario ${rows[0].email}`)
     return res.status(200).json({
       message: 'Perfil completo',
       perfilCompleto
     })
   } catch (error) {
+    createLog('', 'isPerfilCompleto', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1328,13 +1343,12 @@ const update = async (req, res) => {
         }
       }
     }
-
+    createLog(id, 'update', `Actualización de usuario ${rows[0].email}`)
     return res.status(200).json({
       message: 'User updated successfully'
     })
   } catch (error) {
-    console.error(error)
-
+    createLog('', 'update', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1361,11 +1375,13 @@ const getToken = async (req, res) => {
         message: 'User not activated'
       })
     }
+    createLog(rows[0].id, 'getToken', `Obtención de token de usuario ${rows[0].email}`)
     return res.status(200).json({
       message: 'Token',
       user_info: rows[0]
     })
   } catch (error) {
+    createLog('', 'getToken', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1402,39 +1418,43 @@ const getToLike = async (req, res) => {
     let fotos = []
     let userRandom = []
     let count = 0
-    do {
-      const userToken = req.headers['user-token']
-      const data = knowTokenData(userToken).data
-      const id = data.id
-      const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
-      const [count_] = await pool.query('SELECT COUNT(*) FROM actions WHERE id_action = 1 AND date_insert = CURRENT_DATE AND id_user = ?;', [id])
-      count = count_
-      const idOrientation = user[0].id_orientation
-      const idGenre = user[0].id_genre
-      const genreId = calcGenreId(idOrientation, idGenre)
-      let userRandom_
-      if (genreId === 0) {
-        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) ORDER BY RAND() LIMIT 50', [id, id])
-      } else {
-        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) AND id_genre = ? ORDER BY RAND() LIMIT 50', [id, id, genreId])
-      }
-      if (userRandom_.length === 0) {
-        return res.status(404).json({
-          message: 'No more users to like'
-        })
-      }
-      const [foto] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [userRandom_[0].id])
-      fotos = foto
-      userRandom = userRandom_
-      const fotoAux = foto.map(foto => foto.image)
-      userRandom[0].fotos = fotoAux
-    } while (fotos.length === 0)
+    for (let i = 0; i < 2; i++) {
+      do {
+        const userToken = req.headers['user-token']
+        const data = knowTokenData(userToken).data
+        const id = data.id
+        const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
+        const [count_] = await pool.query('SELECT COUNT(*) FROM actions WHERE id_action = 1 AND date_insert = CURRENT_DATE AND id_user = ?;', [id])
+        count = count_
+        const idOrientation = user[0].id_orientation
+        const idGenre = user[0].id_genre
+        const genreId = calcGenreId(idOrientation, idGenre)
+        let userRandom_
+        if (genreId === 0) {
+          [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) ORDER BY RAND() LIMIT 50', [id, id])
+        } else {
+          [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) AND id_genre = ? ORDER BY RAND() LIMIT 50', [id, id, genreId])
+        }
+        if (userRandom_.length === 0) {
+          return res.status(404).json({
+            message: 'No more users to like'
+          })
+        }
+        const [foto] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [userRandom_[0].id])
+        fotos = foto
+        userRandom = userRandom_
+        const fotoAux = foto.map(foto => foto.image)
+        userRandom[0].fotos = fotoAux
+      } while (fotos.length === 0)
+    }
+    createLog(id, 'getToLike', `Obtención de "To Like" de usuario ${rows[0].email}`)
     return res.status(200).json({
       message: 'To like',
       userRandom,
       count
     })
   } catch (error) {
+    createLog('', 'getToLike', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1484,12 +1504,14 @@ const getMatchList = async (req, res) => {
         matchList.push(rows2[0])
       }
     }
+    createLog(id, 'getMatchList', `Obtención de "Match List" de usuario ${rows[0].email}`)
     return res.status(200).json({
       message: 'Match list',
       matchList,
       count
     })
   } catch (error) {
+    createLog('', 'getMatchList', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1542,7 +1564,6 @@ const createTestUser = async (req, res) => {
       const idReligion = religions[Math.floor(Math.random() * religions.length)].id
       const image = 'https://picsum.photos/200/300'
       const [nextId] = await pool.query('SELECT MAX(id) FROM users')
-      console.log(nextId)
       const id = nextId[0]['MAX(id)'] + 1
 
       // Inserción del usuario con el ID específico
@@ -1582,11 +1603,12 @@ const createTestUser = async (req, res) => {
 
     // Confirmar la transacción
     await pool.query('COMMIT')
-
+    createLog('', 'createTestUser', `Creación de ${numUsers} usuarios`)
     return res.status(200).json({
       message: `${numUsers} users created successfully`
     })
   } catch (error) {
+    createLog('', 'createTestUser', error)
     // Revertir la transacción en caso de error
     await pool.query('ROLLBACK')
     console.error('Error creating test users:', error)
@@ -1600,11 +1622,7 @@ const createTestUser = async (req, res) => {
 const deleteForm = async (req, res) => {
   try {
     const { email, phone } = req.body
-    console.log(req.body)
     const [user] = await pool.query('SELECT * FROM users WHERE email = ? AND phone = ?', [email, phone])
-
-    console.log(user)
-
     if (user.length === 0) {
       return res.status(404).json({
         message: 'User not found'
@@ -1613,11 +1631,12 @@ const deleteForm = async (req, res) => {
     let nextDeleteFormId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `delete_form`')
     nextDeleteFormId = nextDeleteFormId[0].next_id
     await pool.query('INSERT INTO `delete_form`(id, `email`, `phone`) VALUES (?, ?, ?)', [nextDeleteFormId, email, phone])
+    createLog(user[0].id, 'deleteForm', `Formulario de eliminación de usuario ${user[0].email}`)
     return res.status(200).json({
       message: 'Form sent'
     })
   } catch (error) {
-    console.error('Error deleting form:', error)
+    createLog('', 'deleteForm', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1643,11 +1662,12 @@ const deletePhoto = async (req, res) => {
       })
     }
     await pool.query('DELETE FROM user_image WHERE user_id = ? AND image = ?', [user.id, photo])
+    createLog(user.id, 'deletePhoto', `Foto eliminada de usuario ${user.email}`)
     return res.status(200).json({
       message: 'Photo deleted'
     })
   } catch (error) {
-    console.error('Error deleting photo:', error)
+    createLog('', 'deletePhoto', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
