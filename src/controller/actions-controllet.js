@@ -13,7 +13,7 @@ const like = async (req, res) => {
     const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [idUser])
     const [user2] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
     const name = `${user[0].name} - ${user2[0].name}`
-    createLog(id, 'like', `Like de usuario ${idUser} por usuario ${id}`)
+    createLog(id, `like actions-controllet - 16`, `Like de usuario ${idUser} por usuario ${id}`)
     if (IsMatch.length !== 0) {
       await pool.query('INSERT INTO chat (ID, name) VALUES ((SELECT MAX(ID) + 1 FROM `chat`), ?)', [name])
 
@@ -27,7 +27,7 @@ const like = async (req, res) => {
       const chatId = chatResults[0].ID
       await pool.query('INSERT INTO user_chat (ID, ID_user, ID_chat) VALUES ((SELECT MAX(ID) + 1 FROM user_chat), ?, ?)', [id, chatId])
       await pool.query('INSERT INTO user_chat (ID, ID_user, ID_chat) VALUES ((SELECT MAX(ID) + 1 FROM user_chat), ?, ?)', [idUser, chatId])
-      createLog(id, 'like', `Match de usuario ${idUser} por usuario ${id} y creación de chat ${chatId}`)
+      createLog(id, 'like actions-controllet - 30', `Match de usuario ${idUser} por usuario ${id} y creación de chat ${chatId}`)
       return res.status(200).json({
         message: 'Like created successfully',
         url: `https://bledbonds.es/chat/${chatId}`,
@@ -40,7 +40,7 @@ const like = async (req, res) => {
       })
     }
   } catch (error) {
-    createLog('', 'like', error)
+    createLog('', 'like actions-controllet - 43', error)
     return res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/actions-controllet.js',
@@ -56,13 +56,13 @@ const dislike = async (req, res) => {
     let [nextId] = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `actions`')
     nextId = nextId[0].next_id
     await pool.query('INSERT INTO actions (id, id_user, id_action, id_liked) VALUES (?, ?, ?, ?)', [nextId, id, action, idUser])
-    createLog(id, 'dislike', `Dislike de usuario ${idUser} por usuario ${id}`)
+    createLog(id, 'dislike actions-controllet - 59', `Dislike de usuario ${idUser} por usuario ${id}`)
     return res.status(200).json({
       message: 'Dislike created successfully',
       IsMatch: false
     })
   } catch (error) {
-    createLog('', 'dislike', error)
+    createLog('', 'dislike actions-controllet - 65', error)
     return res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/actions-controllet.js',

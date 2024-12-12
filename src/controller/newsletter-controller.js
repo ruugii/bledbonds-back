@@ -1314,7 +1314,7 @@ const create = async (req, res) => {
     let nextNewsletterId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `newsletter`')
     nextNewsletterId = nextNewsletterId[0].next_id
     await pool.query('INSERT INTO `newsletter`(id, `email`, `token`) VALUES (?, ?, ?)', [nextNewsletterId, req.body.email, token])
-    createLog(0, 'create', `Creación de newsletter de ${req.body.email}`)
+    createLog(0, 'create newsletter-controller - 1317', `Creación de newsletter de ${req.body.email}`)
     nodemailer.createTestAccount((err, account) => {
       if (err) {
         return res.status(500).json({
@@ -1362,7 +1362,7 @@ const create = async (req, res) => {
       }
     })
   } catch (error) {
-    createLog('', 'error al apuntar a la newsletter', error)
+    createLog('', 'create newsletter-controller - 1365', error)
     return res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/newsletter-controller.js',
@@ -1374,12 +1374,12 @@ const create = async (req, res) => {
 const deleteEmail = async (req, res) => {
   try {
     await pool.query('DELETE FROM newsletter WHERE token = ?', [req.params.email])
-    createLog(0, 'deleteEmail', `Eliminación de newsletter de ${req.params.email}`)
+    createLog(0, 'deleteEmail newsletter-controller - 1377', `Eliminación de newsletter de ${req.params.email}`)
     return res.status(200).json({
       message: 'Email deleted from newsletter list'
     })
   } catch (error) {
-    createLog('', 'error al eliminar la newsletter', error)
+    createLog('', 'deleteEmail newsletter-controller - 1382', error)
     return res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/newsletter-controller.js',
@@ -1391,10 +1391,10 @@ const deleteEmail = async (req, res) => {
 const list = async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM newsletter')
-    createLog(0, 'list', `Listado de newsletters`)
+    createLog(0, 'list newsletter-controller - 1394', `Listado de newsletters`)
     return res.status(200).json(rows)
   } catch (error) {
-    createLog('', 'list', error)
+    createLog('', 'list newsletter-controller - 1397', error)
     return res.status(500).json({
       message: 'Internal server error'
     })
@@ -1403,7 +1403,7 @@ const list = async (req, res) => {
 
 const sendTest = async (req, res) => {
   try {
-    createLog(0, 'sendTest', `Envio de prueba de newsletter a ${req.body.email}`)
+    createLog(0, 'sendTest newsletter-controller - 1406', `Envio de prueba de newsletter a ${req.body.email}`)
     nodemailer.createTestAccount((err, account) => {
       if (err) {
         return res.status(500).json({
@@ -1444,7 +1444,7 @@ const sendTest = async (req, res) => {
       }
     })
   } catch (error) {
-    createLog('', 'sendTest', error)
+    createLog('', 'sendTest newsletter-controller - 1447', error)
     return res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/newsletter-controller.js',
@@ -1496,7 +1496,7 @@ const send = async (req, res) => {
         }
       })
     }
-    createLog(0, 'send', `Envio de newsletter a los usuarios suscritos`)
+    createLog(0, 'send newsletter-controller - 1499', `Envio de newsletter a los usuarios suscritos`)
     if (errorSendEmail) {
       return res.status(500).json({
         message: 'Error sending email',
@@ -1508,7 +1508,7 @@ const send = async (req, res) => {
       })
     }
   } catch (error) {
-    createLog('', 'send', error)
+    createLog('', 'send newsletter-controller - 1511', error)
     return res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/newsletter-controller.js',

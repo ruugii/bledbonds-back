@@ -95,7 +95,7 @@ const register = async (req, res) => {
     nextUserRoleId = nextUserRoleId[0].next_id
     await pool.query('INSERT INTO `users_role`(id, `user_id`, `role_id`) VALUES (?, ?, (SELECT id FROM role WHERE NAME LIKE "user"))', [nextUserRoleId, nextId])
 
-    createLog(nextId, 'register', 'Registro de usuario')
+    createLog(nextId, 'register user-controller - 98', 'Registro de usuario')
 
     // Configuración y envío del correo electrónico
     nodemailer.createTestAccount((err, account) => {
@@ -140,7 +140,7 @@ const register = async (req, res) => {
   } catch (error) {
     // Revertir la transacción en caso de error
     await pool.query('ROLLBACK')
-    createLog('', 'register', error)
+    createLog('', 'register user-controller - 143', error)
     return res.status(500).json({
       message: 'Error interno del servidor',
       path: 'src/controller/user-controller.js',
@@ -998,12 +998,12 @@ const activate = async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM users_activation WHERE validationCode = ?', [req.params.validateCode])
     await pool.query('UPDATE users SET isActive = 1 WHERE id = ?', [rows[0].id_user])
     await pool.query('DELETE FROM users_activation WHERE validationCode = ?', [req.params.validateCode])
-    createLog(rows[0].id_user, 'activate', 'Activación de usuario')
+    createLog(rows[0].id_user, 'activate user-controller - 1001', 'Activación de usuario')
     return res.status(200).json({
       message: 'User activated successfully'
     })
   } catch (error) {
-    createLog('', 'activate', error)
+    createLog('', 'activate user-controller - 1006', error)
     res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/user-controller.js',
@@ -1038,7 +1038,7 @@ const login = async (req, res) => {
       })
       const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [rows[0].id])
       const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null && imageRows.length > 0
-      createLog(rows[0].id, 'login', `Login de usuario ${rows[0].email}`)
+      createLog(rows[0].id, 'login user-controller - 1041', `Login de usuario ${rows[0].email}`)
       return res.status(200).json({
         message: 'User logged in successfully',
         token,
@@ -1053,7 +1053,7 @@ const login = async (req, res) => {
       })
     }
   } catch (error) {
-    createLog('', 'login', error)
+    createLog('', 'login user-controller - 1056', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1134,12 +1134,12 @@ const list = async (req, res) => {
     }
 
     const reorderedRows = rows.map(reorderKeys)
-    createLog('', 'list', `Listado de usuarios`)
+    createLog('', 'list user-controller - 1137', `Listado de usuarios`)
     return res.status(200).json({
       users: reorderedRows
     })
   } catch (error) {
-    createLog('', 'list', error)
+    createLog('', 'list user-controller - 1142', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1164,7 +1164,7 @@ const loginByCode = async (req, res) => {
     let nextUser2faId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `users_2fa`')
     nextUser2faId = nextUser2faId[0].next_id
     await pool.query('INSERT INTO `users_2fa`(id, `id_user`, `validationCode`) VALUES (?, ?, ?)', [nextUser2faId, rows[0].id, code])
-    createLog(rows[0].id, 'loginByCode', `Login por código de verificación de ${rows[0].email}`)
+    createLog(rows[0].id, 'loginByCode user-controller - 1167', `Login por código de verificación de ${rows[0].email}`)
     // Mandar codigo por email
     const transporter = nodemailer.createTransport({
       host: 'smtp.ionos.es',
@@ -1197,7 +1197,7 @@ const loginByCode = async (req, res) => {
       }
     })
   } catch (error) {
-    createLog('', 'loginByCode', error)
+    createLog('', 'loginByCode user-controller - 1200', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1231,7 +1231,7 @@ const loginByCode2 = async (req, res) => {
         data: rows[0]
       })
       const [role_] = await pool.query('SELECT name FROM role WHERE id = (SELECT role_id FROM users_role WHERE user_id = ?)', [rows[0].id])
-      createLog(rows[0].id, 'loginByCode2', `Login por código de verificación de ${rows[0].email}`)
+      createLog(rows[0].id, 'loginByCode2 user-controller - 1234', `Login por código de verificación de ${rows[0].email}`)
       return res.status(200).json({
         message: 'User logged in successfully',
         token,
@@ -1239,7 +1239,7 @@ const loginByCode2 = async (req, res) => {
       })
     }
   } catch (error) {
-    createLog('', 'loginByCode2', error)
+    createLog('', 'loginByCode2 user-controller - 1242', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1264,13 +1264,13 @@ const isPerfilCompleto = async (req, res) => {
     }
     const [imageRows] = await pool.query('SELECT image FROM user_image WHERE user_id = ?', [id])
     const perfilCompleto = await rows[0].id_find !== null && rows[0].id_orientation !== null && rows[0].id_status !== null && rows[0].bio !== null && imageRows.length > 0
-    createLog(id, 'isPerfilCompleto', `Verificación de perfil completo de usuario ${rows[0].email}`)
+    createLog(id, 'isPerfilCompleto user-controller - 1267', `Verificación de perfil completo de usuario ${rows[0].email}`)
     return res.status(200).json({
       message: 'Perfil completo',
       perfilCompleto
     })
   } catch (error) {
-    createLog('', 'isPerfilCompleto', error)
+    createLog('', 'isPerfilCompleto user-controller - 1273', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1343,12 +1343,12 @@ const update = async (req, res) => {
         }
       }
     }
-    createLog(id, 'update', `Actualización de usuario ${rows[0].email}`)
+    createLog(id, 'update user-controller - 1346', `Actualización de usuario ${id}`)
     return res.status(200).json({
       message: 'User updated successfully'
     })
   } catch (error) {
-    createLog('', 'update', error)
+    createLog('', 'update user-controller - 1351', error.toString())
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1375,13 +1375,13 @@ const getToken = async (req, res) => {
         message: 'User not activated'
       })
     }
-    createLog(rows[0].id, 'getToken', `Obtención de token de usuario ${rows[0].email}`)
+    createLog(rows[0].id, 'getToken user-controller - 1378', `Obtención de token de usuario ${rows[0].email}`)
     return res.status(200).json({
       message: 'Token',
       user_info: rows[0]
     })
   } catch (error) {
-    createLog('', 'getToken', error)
+    createLog('', 'getToken user-controller - 1384', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1447,14 +1447,14 @@ const getToLike = async (req, res) => {
         userRandom[0].fotos = fotoAux
       } while (fotos.length === 0)
     }
-    createLog(id, 'getToLike', `Obtención de "To Like" de usuario ${rows[0].email}`)
+    createLog(id, 'getToLike user-controller - 1450', `Obtención de "To Like" de usuario ${rows[0].email}`)
     return res.status(200).json({
       message: 'To like',
       userRandom,
       count
     })
   } catch (error) {
-    createLog('', 'getToLike', error)
+    createLog('', 'getToLike user-controller - 1457', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1504,14 +1504,14 @@ const getMatchList = async (req, res) => {
         matchList.push(rows2[0])
       }
     }
-    createLog(id, 'getMatchList', `Obtención de "Match List" de usuario ${rows[0].email}`)
+    createLog(id, 'getMatchList user-controller - 1507', `Obtención de "Match List" de usuario ${rows[0].email}`)
     return res.status(200).json({
       message: 'Match list',
       matchList,
       count
     })
   } catch (error) {
-    createLog('', 'getMatchList', error)
+    createLog('', 'getMatchList user-controller - 1514', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1603,12 +1603,12 @@ const createTestUser = async (req, res) => {
 
     // Confirmar la transacción
     await pool.query('COMMIT')
-    createLog('', 'createTestUser', `Creación de ${numUsers} usuarios`)
+    createLog('', 'createTestUser user-controller - 1606', `Creación de ${numUsers} usuarios`)
     return res.status(200).json({
       message: `${numUsers} users created successfully`
     })
   } catch (error) {
-    createLog('', 'createTestUser', error)
+    createLog('', 'createTestUser user-controller - 1611', error)
     // Revertir la transacción en caso de error
     await pool.query('ROLLBACK')
     console.error('Error creating test users:', error)
@@ -1631,12 +1631,12 @@ const deleteForm = async (req, res) => {
     let nextDeleteFormId = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `delete_form`')
     nextDeleteFormId = nextDeleteFormId[0].next_id
     await pool.query('INSERT INTO `delete_form`(id, `email`, `phone`) VALUES (?, ?, ?)', [nextDeleteFormId, email, phone])
-    createLog(user[0].id, 'deleteForm', `Formulario de eliminación de usuario ${user[0].email}`)
+    createLog(user[0].id, 'deleteForm user-controller - 1634', `Formulario de eliminación de usuario ${user[0].email}`)
     return res.status(200).json({
       message: 'Form sent'
     })
   } catch (error) {
-    createLog('', 'deleteForm', error)
+    createLog('', 'deleteForm user-controller - 1639', error)
     return res.status(500).json({
       message: 'Internal server error',
       error
@@ -1662,12 +1662,12 @@ const deletePhoto = async (req, res) => {
       })
     }
     await pool.query('DELETE FROM user_image WHERE user_id = ? AND image = ?', [user.id, photo])
-    createLog(user.id, 'deletePhoto', `Foto eliminada de usuario ${user.email}`)
+    createLog(user.id, 'deletePhoto user-controller - 1665', `Foto eliminada de usuario ${user.email}`)
     return res.status(200).json({
       message: 'Photo deleted'
     })
   } catch (error) {
-    createLog('', 'deletePhoto', error)
+    createLog('', 'deletePhoto user-controller - 1670', error)
     return res.status(500).json({
       message: 'Internal server error',
       error

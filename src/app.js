@@ -31,9 +31,9 @@ io.on('connection', (socket) => {
       nexId = nexId[0].next_id
       pool.query('INSERT INTO message (ID_message, ID_User, ID_Chat, Message) VALUES (?, ?, ?, ?)', [nexId, userID, msg.chatId, msg.message])
       io.emit(`chat message ${msg.chatId}`, msg)
-      createLog(userID, 'send message', msg.message)
+      createLog(userID, `send message app.js - 34`, msg.message)
     } catch (error) {
-      createLog('', 'send message', error)
+      createLog('', `send message app.js - 36`, error)
     }
   })
 })

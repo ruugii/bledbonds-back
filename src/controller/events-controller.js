@@ -4,11 +4,11 @@ const { knowTokenData } = require('../functions/knowTokenData')
 
 const getAllFuture = async (req, res) => {
   try {
-    createLog(0, 'getAllFuture', `Obtención de eventos futuros`)
+    createLog(0, 'getAllFuture events-controller - 7', `Obtención de eventos futuros`)
     const [rows] = await pool.query('SELECT events.*, eventsImage.eventImageURL FROM events LEFT JOIN eventsImage ON events.id = eventsImage.eventId WHERE events.event_date >= CURDATE();')
     res.status(200).json(rows)
   } catch (error) {
-    createLog('', 'getAllFuture', error)
+    createLog('', 'getAllFuture events-controller - 11', error)
     res.status(500).json({
       message: 'Internal server error',
       error
@@ -18,12 +18,12 @@ const getAllFuture = async (req, res) => {
 
 const getParticipants = async (req, res) => {
   try {
-    createLog(0, 'getParticipants', `Obtención de participantes del evento ${req.params.id}`)
+    createLog(0, 'getParticipants events-controller - 21', `Obtención de participantes del evento ${req.params.id}`)
     const { id } = req.params
     const [rows] = await pool.query('SELECT users.* FROM participants JOIN users ON participants.id_user = users.id WHERE participants.id_event = ?', [id])
     res.status(200).json(rows)
   } catch (error) {
-    createLog('', 'getParticipants', error)
+    createLog('', 'getParticipants events-controller - 26', error)
     res.status(500).json({
       message: 'Internal server error',
       error
@@ -33,7 +33,7 @@ const getParticipants = async (req, res) => {
 
 const getChat = async (req, res) => {
   try {
-    createLog(0, 'getChat', `Obtención de chat del evento ${req.params.id}`)
+    createLog(0, 'getChat events-controller - 39', `Obtención de chat del evento ${req.params.id}`)
     const { id } = req.params
 
     // Fetch event chat information
@@ -66,7 +66,7 @@ const getChat = async (req, res) => {
 
     res.status(200).json(chatResponse)
   } catch (error) {
-    createLog('', 'getChat', error)
+    createLog('', 'getChat events-controller - 69', error)
     res.status(500).json({
       message: 'Internal server error',
       error: error.message // Send the error message instead of the entire error object
@@ -76,7 +76,7 @@ const getChat = async (req, res) => {
 
 const updateEvent = async (req, res) => {
   try {
-    createLog(0, 'updateEvent', `Actualización de evento ${req.params.id}`)
+    createLog(0, 'updateEvent events-controller - 79', `Actualización de evento ${req.params.id}`)
     if (!req.headers['user-key']) {
       return res.status(401).json({ message: 'Unauthorized' })
     } else if (knowTokenData(req.headers['user-key']).role !== 'admin') {
@@ -89,7 +89,7 @@ const updateEvent = async (req, res) => {
 
     res.status(200).json({ message: 'Event updated' })
   } catch (error) {
-    createLog('', 'updateEvent', error)
+    createLog('', 'updateEvent events-controller - 92', error)
     res.status(500).json({
       message: 'Internal server error',
       error: error.message
@@ -99,7 +99,7 @@ const updateEvent = async (req, res) => {
 
 const deleteEvent = async (req, res) => {
   try {
-    createLog(0, 'deleteEvent', `Eliminación de evento ${req.params.id}`)
+    createLog(0, 'deleteEvent events-controller - 102', `Eliminación de evento ${req.params.id}`)
     if (!req.headers['user-key']) {
       return res.status(401).json({ message: 'Unauthorized' })
     } else if (knowTokenData(req.headers['user-key']).role !== 'admin') {
@@ -120,7 +120,7 @@ const deleteEvent = async (req, res) => {
 
     res.status(200).json({ message: 'Event deleted' })
   } catch (error) {
-    createLog('', 'deleteEvent', error)
+    createLog('', 'deleteEvent events-controller - 123', error)
     res.status(500).json({
       message: 'Internal server error',
       error: error.message
@@ -130,7 +130,7 @@ const deleteEvent = async (req, res) => {
 
 const createEvent = async (req, res) => {
   try {
-    createLog(0, 'createEvent', `Creación de evento ${req.body.name}`)
+    createLog(0, 'createEvent events-controller - 133', `Creación de evento ${req.body.name}`)
     const userKey = req.headers['user-key']
     if (!userKey) {
       return res.status(401).json({ message: 'Unauthorized' })
@@ -210,7 +210,7 @@ const createEvent = async (req, res) => {
 
     res.status(201).json({ message: 'Event created' })
   } catch (error) {
-    createLog('', 'createEvent', error)
+    createLog('', 'createEvent events-controller - 213', error)
     // Rollback the transaction in case of error
     await pool.query('ROLLBACK')
 
@@ -223,7 +223,7 @@ const createEvent = async (req, res) => {
 
 const newParticipants = async (req, res) => {
   try {
-    createLog(0, 'newParticipants', `Nuevo participante en evento ${req.params.eventId}`)
+    createLog(0, 'newParticipants events-controller - 226', `Nuevo participante en evento ${req.params.eventId}`)
     const { eventId } = req.params
 
     const token = req.headers['x-user-key']
@@ -271,7 +271,7 @@ const newParticipants = async (req, res) => {
       status: 200
     })
   } catch (e) {
-    createLog('', 'newParticipants', e)
+    createLog('', 'newParticipants events-controller - 274', e)
     return res.status(500).json({
       message: 'Internal server error',
       error: e.message,
@@ -282,12 +282,12 @@ const newParticipants = async (req, res) => {
 
 const getOne = async (req, res) => {
   try {
-    createLog(0, 'getOne', `Obtención de evento ${req.params.id}`)
+    createLog(0, 'getOne events-controller - 285', `Obtención de evento ${req.params.id}`)
     const { id } = req.params
     const [rows] = await pool.query('SELECT * FROM events WHERE id = ?', [id])
     res.status(200).json(rows)
   } catch (error) {
-    createLog('', 'getOne', error)
+    createLog('', 'getOne events-controller - 290', error)
     res.status(500).json({
       message: 'Internal server error',
       error
@@ -297,11 +297,11 @@ const getOne = async (req, res) => {
 
 const getAll = async (req, res) => {
   try {
-    createLog(0, 'getAll', `Obtención de eventos`)
+    createLog(0, 'getAll events-controller - 300', `Obtención de eventos`)
     const [rows] = await pool.query('SELECT events.*, eventsImage.eventImageURL FROM events LEFT JOIN eventsImage ON events.id = eventsImage.eventId;')
     res.status(200).json(rows)
   } catch (error) {
-    createLog('', 'getAll', error)
+    createLog('', 'getAll events-controller - 304', error)
     res.status(500).json({
       message: 'Internal server error',
       error
@@ -311,11 +311,11 @@ const getAll = async (req, res) => {
 
 const getPast = async (req, res) => {
   try {
-    createLog(0, 'getPast', `Obtención de eventos pasados`)
+    createLog(0, 'getPast events-controller - 314', `Obtención de eventos pasados`)
     const [rows] = await pool.query('SELECT events.*, eventsImage.eventImageURL FROM events LEFT JOIN eventsImage ON events.id = eventsImage.eventId WHERE CURDATE() >= events.event_date;')
     res.status(200).json(rows)
   } catch (error) {
-    createLog('', 'getPast', error)
+    createLog('', 'getPast events-controller - 318', error)
     res.status(500).json({
       message: 'Internal server error',
       error

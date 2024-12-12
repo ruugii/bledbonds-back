@@ -24,7 +24,7 @@ const uploadControll = async (req, res) => {
   const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
   const link = `https://api.bledbonds.es/img/${uniqueSuffix + '.' + file.mimetype.split('/')[1]}`
   await renameFile('public/img/', file.filename, uniqueSuffix + '.' + file.mimetype.split('/')[1])
-  createLog(0, 'upload', `Subida de imagen ${file.filename}`)
+  createLog(0, 'uploadControll img-controller - 27', `Subida de imagen ${file.filename}`)
   res.status(200).json({
     message: 'File uploaded successfully',
     filename: uniqueSuffix + '.' + file.mimetype.split('/')[1],
@@ -40,10 +40,10 @@ async function deleteControll (req, res) {
   if (fs.existsSync(path + name)) {
     fs.unlink(url, function (err) {
       if (err) {
-        createLog('', 'delete image', err)
+        createLog('', 'deleteControll img-controller - 43', err)
         throw err
       } else {
-        createLog(0, 'delete', `Eliminación de imagen ${name}`)
+        createLog(0, 'deleteControll img-controller - 46', `Eliminación de imagen ${name}`)
         res.status(200).json({
           message: 'File deleted successfully'
         })

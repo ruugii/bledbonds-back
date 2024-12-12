@@ -17,10 +17,12 @@ const getByKey = async (req, res) => {
 const update = async (req, res) => {
   try {
     const [rows] = await pool.query('UPDATE MASTER_DATA SET Valor = ? WHERE Master = ? AND Clave = ?', [req.body.value, 'app_enable_option', req.body.key])
-    createLog(0, 'update', `Actualización de opción ${req.body.key}`)
+    createLog(0, 'update masterdata-controller - 20', `Actualización de opción ${req.body.key}`)
     return res.status(200).json(rows)
   } catch (error) {
-    createLog('', 'update', error)
+    console.log(error);
+    
+    createLog('', 'update masterdata-controller - 25', error)
     return res.status(500).json({
       message: 'Internal server error',
       path: 'src/controller/masterdata-controller.js',

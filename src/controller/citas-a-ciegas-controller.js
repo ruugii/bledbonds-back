@@ -37,12 +37,12 @@ const create = async (req, res) => {
     let [nextUserChatId] = await pool.query('SELECT COALESCE(MAX(ID) + 1, 1) AS next_id FROM `user_chat`')
     nextUserChatId = nextUserChatId[0].next_id
     await pool.query('INSERT INTO user_chat (ID, ID_user, ID_chat) VALUES (?, ?, ?)', [nextUserChatId, idRandom, chatId])
-    createLog(idUser, 'create', `Creación de cita a ciegas ${idUser} con ${idRandom}`)
+    createLog(idUser, 'create citas-a-ciegas-controller - 40', `Creación de cita a ciegas ${idUser} con ${idRandom}`)
     return res.status(200).json({
       message: 'Se ha creado la cita a ciegas con éxito'
     })
   } catch (error) {
-    createLog('', 'create', error)
+    createLog('', 'create citas-a-ciegas-controller - 45', error)
     res.status(500).json({
       message: 'Internal server error',
       error: error.message
