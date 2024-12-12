@@ -7,6 +7,7 @@ const pool = require('./db/db')
 const multer = require('multer')
 const verifyAPIKey = require('./middlewares/verifyAPIKey')
 const { knowTokenData } = require('./functions/knowTokenData')
+const createLog = require('./functions/createLog')
 
 // Initialize express app
 const app = express()
@@ -24,11 +25,16 @@ app.use(multer({
 // Socket.IO connection handling
 io.on('connection', (socket) => {
   socket.on('chat message', async (msg) => {
-    const userID = knowTokenData(msg.token).id
-    let [nexId] = await pool.query('SELECT COALESCE(MAX(ID_message) + 1, 1) AS next_id FROM message')
-    nexId = nexId[0].next_id
-    pool.query('INSERT INTO message (ID_message, ID_User, ID_Chat, Message) VALUES (?, ?, ?, ?)', [nexId, userID, msg.chatId, msg.message])
-    io.emit(`chat message ${msg.chatId}`, msg)
+    try {
+      const userID = knowTokenData(msg.token).id
+      let [nexId] = await pool.query('SELECT COALESCE(MAX(ID_message) + 1, 1) AS next_id FROM message')
+      nexId = nexId[0].next_id
+      pool.query('INSERT INTO message (ID_message, ID_User, ID_Chat, Message) VALUES (?, ?, ?, ?)', [nexId, userID, msg.chatId, msg.message])
+      io.emit(`chat message ${msg.chatId}`, msg)
+      createLog(userID, 'send message', msg.message)
+    } catch (error) {
+      createLog('', 'send message', error)
+    }
   })
 })
 
@@ -70,6 +76,8 @@ app.use('/api/v1/citas-a-ciegas', require('./routes/citas-a-ciegas-routes'))
 app.use('/api/v1/masterdata', require('./routes/masterdata-routes'))
 
 app.use('/api/v1/actions', require('./routes/actions-routes'))
+
+app.use('/api/v1/beta', require('./routes/beta-routes'))
 
 app.use(verifyAPIKey, (req, res, next) => {
   res.status(404).json({
