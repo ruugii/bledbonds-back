@@ -1,4 +1,5 @@
 const pool = require('../db/db')
+const createLog = require('../functions/createLog')
 const { knowTokenData } = require('../functions/knowTokenData')
 
 const getAll = async (req, res) => {
@@ -45,6 +46,7 @@ const create = async (req, res) => {
     let [nextId] = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `blog`')
     nextId = nextId[0].next_id
     const [rows] = await pool.query('INSERT INTO blog (id, title, resume, content, id_category, created_by) VALUES (?, ?, ?, ?, ?, ?)', [nextId, title, resume, text, idCategory[0].id, tokenDecoded.id])
+    createLog(tokenDecoded.id, 'create', `Creación de blog ${title}`)
     if (rows) {
       res.status(201).json({
         message: 'Blog created successfully'
@@ -55,6 +57,7 @@ const create = async (req, res) => {
       })
     }
   } catch (error) {
+    createLog('', 'create', error)
     res.status(500).json({
       message: 'Internal server error',
       error
