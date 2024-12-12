@@ -1,4 +1,5 @@
 const pool = require('../db/db')
+const createLog = require('../functions/createLog')
 
 const getAll = async (req, res) => {
   try {
@@ -19,11 +20,13 @@ const create = async (req, res) => {
     let [nextId] = await pool.query('SELECT COALESCE(MAX(id) + 1, 1) AS next_id FROM `category`')
     nextId = nextId[0].next_id
     await pool.query('INSERT INTO category (id, name) VALUES (?, ?)', [nextId, name])
+    createLog(0, 'create', `Creación de categoría ${name}`)
     res.status(201).json({
       message: 'Category created successfully',
       category: { name }
     })
   } catch (error) {
+    createLog('', 'create', error)
     res.status(500).json({
       message: 'Internal server error',
       error
