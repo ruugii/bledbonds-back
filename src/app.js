@@ -79,6 +79,8 @@ app.use('/api/v1/actions', require('./routes/actions-routes'))
 
 app.use('/api/v1/beta', require('./routes/beta-routes'))
 
+app.use('/api/v1/public', require('./routes/public-routes'))
+
 app.use(verifyAPIKey, (req, res, next) => {
   res.status(404).json({
     message: 'Not found',
