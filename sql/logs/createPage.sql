@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS `logs` (
   `explanation` TEXT NOT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-)
+);

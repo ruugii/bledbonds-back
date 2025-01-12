@@ -4,6 +4,7 @@ const { createToken } = require('../functions/createToken')
 const { hashPassword, verifyPassword } = require('../functions/hashPassword')
 const nodemailer = require('nodemailer')
 const createLog = require('../functions/createLog')
+const { nameMan, nameGirl } = require('../../const/randNames')
 
 const register = async (req, res) => {
   try {
@@ -1063,7 +1064,7 @@ const login = async (req, res) => {
 
 const list = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT users.*, genre.genre_name AS genre_name, role.name AS roleName, find.text AS findText, sexualidad.text AS orientationText, `estado-civil`.text AS statusText, CASE WHEN delete_form.email IS NOT NULL AND delete_form.phone IS NOT NULL THEN true ELSE false END AS deleted FROM users JOIN genre ON users.id_genre = genre.id LEFT JOIN users_role ON users.id = users_role.user_id LEFT JOIN role ON users_role.role_id = role.id LEFT JOIN find ON users.id_find = find.id LEFT JOIN sexualidad ON users.id_orientation = sexualidad.id LEFT JOIN `estado-civil` ON users.id_status = `estado-civil`.id LEFT JOIN delete_form ON users.email = delete_form.email AND users.phone = delete_form.phone;')
+    const [rows] = await pool.query('SELECT users.*, genre.genre_name AS genre_name, role.name AS roleName, find.text AS findText, sexualidad.text AS orientationText, `estado-civil`.text AS statusText, SUM(CASE WHEN actions.id_action = users.id AND actions.id_action = 1 THEN 1 ELSE 0 END) AS num_likes, SUM(CASE WHEN actions.id_liked = users.id AND actions.id_action = 1 THEN 1 ELSE 0 END) AS num_likes_received, CASE WHEN delete_form.email IS NOT NULL AND delete_form.phone IS NOT NULL THEN true ELSE false END AS deleted FROM users JOIN genre ON users.id_genre = genre.id LEFT JOIN users_role ON users.id = users_role.user_id LEFT JOIN role ON users_role.role_id = role.id LEFT JOIN find ON users.id_find = find.id LEFT JOIN sexualidad ON users.id_orientation = sexualidad.id LEFT JOIN `estado-civil` ON users.id_status = `estado-civil`.id LEFT JOIN delete_form ON users.email = delete_form.email AND users.phone = delete_form.phone;')
     rows.forEach(async element => {
       delete element.passwd
       delete element.isActive
@@ -1418,36 +1419,36 @@ const getToLike = async (req, res) => {
     let fotos = []
     let userRandom = []
     let count = 0
-    for (let i = 0; i < 2; i++) {
-      do {
-        const userToken = req.headers['user-token']
-        const data = knowTokenData(userToken).data
-        const id = data.id
-        const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
-        const [count_] = await pool.query('SELECT COUNT(*) FROM actions WHERE id_action = 1 AND date_insert = CURRENT_DATE AND id_user = ?;', [id])
-        count = count_
-        const idOrientation = user[0].id_orientation
-        const idGenre = user[0].id_genre
-        const genreId = calcGenreId(idOrientation, idGenre)
-        let userRandom_
-        if (genreId === 0) {
-          [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) ORDER BY RAND() LIMIT 50', [id, id])
-        } else {
-          [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) AND id_genre = ? ORDER BY RAND() LIMIT 50', [id, id, genreId])
-        }
-        if (userRandom_.length === 0) {
-          return res.status(404).json({
-            message: 'No more users to like'
-          })
-        }
+    const userToken = req.headers['user-token']
+    const data = knowTokenData(userToken).data
+    const id = data.id
+    do {
+      const [user] = await pool.query('SELECT * FROM users WHERE id = ?', [id])
+      const [count_] = await pool.query('SELECT COUNT(*) FROM actions WHERE id_action = 1 AND date_insert = CURRENT_DATE AND id_user = ?;', [id])
+      count = count_
+      const idOrientation = user[0].id_orientation
+      const idGenre = user[0].id_genre
+      const genreId = calcGenreId(idOrientation, idGenre)
+      let userRandom_
+      if (genreId === 0) {
+        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) ORDER BY RAND() LIMIT 50', [id, id])
+      } else {
+        [userRandom_] = await pool.query('SELECT * FROM users WHERE id != ? AND id NOT IN (SELECT id_liked FROM actions WHERE id_user = ?) AND id_genre = ? ORDER BY RAND() LIMIT 50', [id, id, genreId])
+      }
+      if (userRandom_.length === 0) {
+        return res.status(404).json({
+          message: 'No more users to like'
+        })
+      }
+      for (let i = 0; i < userRandom_.length; i++) {
         const [foto] = await pool.query('SELECT * FROM user_image WHERE user_id = ?', [userRandom_[0].id])
         fotos = foto
-        userRandom = userRandom_
         const fotoAux = foto.map(foto => foto.image)
-        userRandom[0].fotos = fotoAux
-      } while (fotos.length === 0)
-    }
-    createLog(id, 'getToLike user-controller - 1450', `Obtención de "To Like" de usuario ${rows[0].email}`)
+        userRandom_[i].fotos = fotoAux
+      }
+      userRandom = userRandom_
+    } while (fotos.length === 0)
+    createLog(id, 'getToLike user-controller - 1450', `Obtención de "To Like" de usuario ${data}`)
     return res.status(200).json({
       message: 'To like',
       userRandom,
@@ -1504,7 +1505,7 @@ const getMatchList = async (req, res) => {
         matchList.push(rows2[0])
       }
     }
-    createLog(id, 'getMatchList user-controller - 1507', `Obtención de "Match List" de usuario ${rows[0].email}`)
+    createLog(id, 'getMatchList user-controller - 1507', `Obtención de "Match List" de usuario ${id}`)
     return res.status(200).json({
       message: 'Match list',
       matchList,
@@ -1538,19 +1539,19 @@ const createTestUser = async (req, res) => {
     for (let i = 0; i < numUsers; i++) {
       // Datos aleatorios
       const gender = genders[Math.floor(Math.random() * genders.length)].id
-      const name = `${Math.random().toString(36).substring(2, 7)}-test`
+      const name = gender === 1 ? nameMan[Math.random() * nameMan.length] : nameGirl[Math.random() * nameGirl.length]
       const birthdate = new Date(
         1970 + Math.floor(Math.random() * 30), // Año entre 1970 y 2000
         Math.floor(Math.random() * 12), // Mes
         Math.floor(Math.random() * 28) + 1 // Día
       )
       const idFind = findOptions[Math.floor(Math.random() * findOptions.length)].id
-      const email = `${name.toLowerCase()}@gmail.com`
+      const email = `${name.toLowerCase()}-${Math.random().toString(36).substring(2, 7)}-test@gmail.com`
       const phone = Math.floor(600000000 + Math.random() * 400000000) // Número de teléfono válido
       const password = await hashPassword(Math.random().toString(36).substring(2, 7))
       const orientation = orientations[Math.floor(Math.random() * orientations.length)].id
       const idStatus = statuses[Math.floor(Math.random() * statuses.length)].id
-      const bio = Math.random().toString(36).substring(2, 50) // Bio con longitud mayor
+      const bio = Math.random().toString(36).substring(2, 200) // Bio con longitud mayor
       const height = Math.floor(Math.random() * 50) + 150 // Altura entre 150cm y 200cm
       const studyPlace = `School-${Math.random().toString(36).substring(2, 7)}`
       const youWork = `Job-${Math.random().toString(36).substring(2, 7)}`
