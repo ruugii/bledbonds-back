@@ -5,6 +5,7 @@ const { hashPassword, verifyPassword } = require('../functions/hashPassword')
 const nodemailer = require('nodemailer')
 const createLog = require('../functions/createLog')
 const { nameMan, nameGirl } = require('../../const/randNames')
+const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS } = require('../config')
 
 const register = async (req, res) => {
   try {
@@ -107,12 +108,12 @@ const register = async (req, res) => {
         })
       } else {
         const transporter = nodemailer.createTransport({
-          host: 'smtp.ionos.es',
-          port: 587,
+          host: SMTP_HOST,
+          port: SMTP_PORT,
           secure: false,
           auth: {
-            user: 'noreply@bledbonds.es',
-            pass: 'rgrbrrr1'
+            user: SMTP_USER,
+            pass: SMTP_PASS
           }
         })
         const mailOptions = {
@@ -1168,12 +1169,12 @@ const loginByCode = async (req, res) => {
     createLog(rows[0].id, 'loginByCode user-controller - 1167', `Login por código de verificación de ${rows[0].email}`)
     // Mandar codigo por email
     const transporter = nodemailer.createTransport({
-      host: 'smtp.ionos.es',
-      port: 587,
+      host: SMTP_HOST,
+      port: SMTP_PORT,
       secure: false,
       auth: {
-        user: 'noreply@bledbonds.es',
-        pass: 'rgrbrrr1'
+        user: SMTP_USER,
+        pass: SMTP_PASS
       }
     })
     const mailOptions = {

@@ -17,6 +17,10 @@ const GOOGLE_SECRET_KEY = process.env.GOOGLE_SECRET_KEY
 const MONGO_URI = process.env.MONGO_URI
 const DB_PORT = process.env.DB_PORT
 const JWT_SECRET = process.env.JWT_SECRET
+const SMTP_HOST = process.env.SMTP_HOST
+const SMTP_PORT = process.env.SMTP_PORT
+const SMTP_USER = process.env.SMTP_USER
+const SMTP_PASS = process.env.SMTP_PASS
 
 module.exports = {
   PORT,
@@ -29,5 +33,9 @@ module.exports = {
   GOOGLE_SECRET_KEY,
   MONGO_URI,
   DB_PORT,
-  JWT_SECRET
+  JWT_SECRET,
+  SMTP_HOST,
+  SMTP_PASS,
+  SMTP_PORT,
+  SMTP_USER
 }
